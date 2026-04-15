@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private float speed = 7f;
+    [SerializeField] private float speed = 5f;
     private Rigidbody2D rb;
     private Vector2 moveInput;
 
@@ -15,7 +15,6 @@ public class Player : MonoBehaviour
     private void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
-        Debug.Log("OnMove вызван: " + moveInput);
     }
 
     private void FixedUpdate()
