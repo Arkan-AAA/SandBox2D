@@ -267,10 +267,10 @@
                 {
                     "name": "",
                     "id": "8ee33de0-522d-4803-bf64-b2df9d7e696e",
-                    "path": "",
+                    "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Action",
                     "isComposite": false,
                     "isPartOfComposite": false

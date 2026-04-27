@@ -3,14 +3,12 @@ using UnityEngine;
 public class PlayerVisual : MonoBehaviour
 {
     private Animator animator;
-    private SpriteRenderer spriteRenderer;
 
     private const string IS_RUNNING = "IsRunning";
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     private void Update()
@@ -26,11 +24,11 @@ public class PlayerVisual : MonoBehaviour
 
         if (mousePos.x < playerPosition.x)
         {
-            spriteRenderer.flipX = true;    
+            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
         }
         else
         {
-            spriteRenderer.flipX = false;
+            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
         }
     }
 }

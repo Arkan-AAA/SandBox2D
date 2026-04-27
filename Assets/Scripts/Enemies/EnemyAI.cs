@@ -15,6 +15,9 @@ public class EnemyAI : MonoBehaviour
     private float roamingTime;
     private Vector3 roamPosition;
     private Vector3 startingPosition;
+    private Animator animator;
+    
+    private const string IS_MOVING = "IsMoving";
     
     private enum State
     {
@@ -32,12 +35,22 @@ public class EnemyAI : MonoBehaviour
         navMeshAgent = GetComponent<NavMeshAgent>();
         navMeshAgent.updateUpAxis = false;
         navMeshAgent.updateRotation = false;
+        
+        var rb = GetComponent<Rigidbody2D>();
+        if (rb != null) rb.freezeRotation = true; 
+        
         state = startingState;
         roamingTime = UnityEngine.Random.Range(0f, roamingTimerMax);
+        
+        animator = GetComponentInChildren<Animator>();
     }
 
     private void Update()
     {
+        bool isMoving = navMeshAgent.velocity.magnitude > 0.1f;
+        animator.SetBool(IS_MOVING, isMoving);
+     
+        
         switch (state)
         {
             case State.Idle:
@@ -67,7 +80,7 @@ public class EnemyAI : MonoBehaviour
     {
         roamPosition = GetRoamingPosition();
         navMeshAgent.SetDestination(roamPosition);
-        state = State.Roaming;
+        ChangeFacingDirection(startingPosition, roamPosition);
         roamingTime = UnityEngine.Random.Range(1f, 3f);
     }
     
@@ -83,6 +96,18 @@ public class EnemyAI : MonoBehaviour
         }
 
         return transform.position;
+    }
+
+    private void ChangeFacingDirection(Vector3 sourcePosition, Vector3 targetPosition)
+    {
+        if (targetPosition.x < sourcePosition.x)
+        {
+            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+        }
+        else
+        {
+            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+        }
     }
 }
 

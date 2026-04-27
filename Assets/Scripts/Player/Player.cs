@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -15,7 +16,19 @@ public class Player : MonoBehaviour
     {
         Instance = this;
         rb = GetComponent<Rigidbody2D>(); 
+        rb.freezeRotation = true;
         playerVisual = GetComponentInChildren<PlayerVisual>();
+    }
+
+    private void Start()
+    {
+        GameInput.Instance.OnPlayerAttack += Player_OnPlayerAttack;
+    }
+    
+    
+    private void Player_OnPlayerAttack(object sender, EventArgs e)
+    {
+        ActiveWeapon.Instance.GetActiveWeapon().Attack();
     }
 
     private void FixedUpdate()
