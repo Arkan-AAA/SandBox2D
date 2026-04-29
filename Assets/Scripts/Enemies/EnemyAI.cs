@@ -22,7 +22,10 @@ public class EnemyAI : MonoBehaviour
     private enum State
     {
         Idle,
-        Roaming
+        Roaming,
+        Chasing,
+        Attacking,
+        Death
     }
     
     private void Start()
@@ -67,6 +70,13 @@ public class EnemyAI : MonoBehaviour
                     roamingTime = UnityEngine.Random.Range(1f, roamingTimerMax);
                 }
                 break;
+            
+            case State.Chasing:
+                break;
+            case State.Attacking:
+                break;
+            case State.Death:
+                break;
         }
         
         if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.2f)
@@ -74,7 +84,7 @@ public class EnemyAI : MonoBehaviour
             Roaming();
         }
     }
-
+    
     private void Roaming()
     {
         roamPosition = GetRoamingPosition();
@@ -83,8 +93,7 @@ public class EnemyAI : MonoBehaviour
         roamingTime = UnityEngine.Random.Range(1f, 3f);
     }
     
-    private Vector3 GetRoamingPosition()
-    {
+    private Vector3 GetRoamingPosition() {
         Vector3 randomDirection = Utils.GetRandomDir() * UnityEngine.Random.Range(roamingDistanceMin, roamingDistanceMax);
         Vector3 targetPosition = startingPosition + randomDirection;
 

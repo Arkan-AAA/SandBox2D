@@ -26,12 +26,6 @@ public class Player : MonoBehaviour
         GameInput.Instance.OnPlayerAttackHeld += () => ActiveWeapon.Instance.AttackHeld();
         GameInput.Instance.OnPlayerAttackReleased += () => ActiveWeapon.Instance.AttackReleased();
     }
-    
-    
-    private void Player_OnPlayerAttack(object sender, EventArgs e)
-    {
-        ActiveWeapon.Instance.GetActiveWeapon().Attack();
-    }
 
     private void FixedUpdate()
     {

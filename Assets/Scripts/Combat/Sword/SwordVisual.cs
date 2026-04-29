@@ -44,4 +44,9 @@ public class SwordVisual : MonoBehaviour
         animator.ResetTrigger(AttackTrigger);
         animator.SetTrigger(AttackTrigger);
     }
+
+    private void TriggerEndAttackAnimation()
+    {
+        sword.AttackColiderTurnOff();
+    }
 }
