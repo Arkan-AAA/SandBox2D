@@ -22,7 +22,9 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-        GameInput.Instance.OnPlayerAttack += Player_OnPlayerAttack;
+        GameInput.Instance.OnPlayerAttack += (s, e) => ActiveWeapon.Instance.Attack();
+        GameInput.Instance.OnPlayerAttackHeld += () => ActiveWeapon.Instance.AttackHeld();
+        GameInput.Instance.OnPlayerAttackReleased += () => ActiveWeapon.Instance.AttackReleased();
     }
     
     

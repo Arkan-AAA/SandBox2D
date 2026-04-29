@@ -1,9 +1,11 @@
-using UnityEngine;
+using System;
+using Combat;
 
-public class Sword : MonoBehaviour
+public class Sword : Weapon
 {
-    public void Attack()
+    public event EventHandler OnSwordSwing;
+    public override void Attack()
     {
-        Debug.Log("Attacking with sword!");
+        OnSwordSwing?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using Satyr.Utils;
 
 public class PlayerVisual : MonoBehaviour
 {
@@ -19,16 +20,11 @@ public class PlayerVisual : MonoBehaviour
 
     private void AdjustPlayerFacingDirection()
     {
-        Vector3 mousePos = GameInput.Instance.GetMousePosition();
-        Vector3 playerPosition = Player.Instance.GetPlayerScreenPosition();
+        float lookX = LookDirectionHelper.GetLookX();
 
-        if (mousePos.x < playerPosition.x)
-        {
-            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-        }
-        else
-        {
-            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
-        }
+        if (lookX < 0f)
+            transform.localScale = new Vector3(-1f, 1f, 1f);
+        else if (lookX > 0f)
+            transform.localScale = new Vector3(1f, 1f, 1f);
     }
 }

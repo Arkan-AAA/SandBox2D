@@ -49,7 +49,6 @@ public class EnemyAI : MonoBehaviour
     {
         bool isMoving = navMeshAgent.velocity.magnitude > 0.1f;
         animator.SetBool(IS_MOVING, isMoving);
-     
         
         switch (state)
         {

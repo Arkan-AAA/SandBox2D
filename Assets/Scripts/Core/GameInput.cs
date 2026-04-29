@@ -9,6 +9,8 @@ public class GameInput : MonoBehaviour
     private PlayerInputActions playerInputActions;
     
      public event EventHandler OnPlayerAttack;
+     public event Action OnPlayerAttackHeld;
+     public event Action OnPlayerAttackReleased; 
 
     private void Awake()
     {
@@ -17,6 +19,8 @@ public class GameInput : MonoBehaviour
         playerInputActions.Enable();
 
         playerInputActions.Player.Fire.started += PlayerAttack_started;
+        playerInputActions.Player.Fire.performed += _ => OnPlayerAttackHeld?.Invoke();
+        playerInputActions.Player.Fire.canceled += _ => OnPlayerAttackReleased?.Invoke();
     }
     
     private void PlayerAttack_started(InputAction.CallbackContext obj)
@@ -35,6 +39,17 @@ public class GameInput : MonoBehaviour
         Vector3 mousePos = Mouse.current.position.ReadValue();
         return mousePos;
     }
+    
+    public Vector2 GetGamepadLookVector()
+    {
+        if (Gamepad.current == null) return Vector2.zero;
+        return Gamepad.current.rightStick.ReadValue();
+    }
 
+    public bool IsGamepadActive()
+    {
+        return Gamepad.current != null && 
+               Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.1f;
+    }
 }
 
