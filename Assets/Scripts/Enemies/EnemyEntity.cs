@@ -1,30 +1,49 @@
 using System;
+using Other;
+using ScriptableObjects;
 using UnityEngine;
 
 namespace Enemies
 {
+    [RequireComponent(typeof(BoxCollider2D))]
+    [RequireComponent(typeof(EnemyAI))]
     public class EnemyEntity : MonoBehaviour
     {
-        [SerializeField] private int _maxHealth;
-        private int _currentHealth;
+        [SerializeField] private EnemySO _enemySO;
+
+        public int CurrentHealth { get; private set; }
+
+        public event Action OnHit;
+        public event Action OnDeath;
+
+        private KnockBack _knockBack;
 
         private void Start()
         {
-            _currentHealth = _maxHealth;
+            CurrentHealth = _enemySO.enemyHealth;
+            _knockBack = GetComponent<KnockBack>();
         }
 
-        public void TakeDamage(int damage)
+        private void OnTriggerStay2D(Collider2D collision)
         {
-           _currentHealth -= damage;
-
-           DetectDeath();
-        }
-        
-        public void DetectDeath()
-        {
-            if (_currentHealth <= 0)
+            if (collision.transform.TryGetComponent(out Player player))
             {
-                Destroy(gameObject);
+                player.TakeDamage(transform, _enemySO.enemyDamageAmount);
+            }
+        }
+
+        public void TakeDamage(Transform damageSource, int damage)
+        {
+            if (CurrentHealth <= 0) return;
+            CurrentHealth -= damage;
+            _knockBack?.GetKnockedBack(damageSource);
+            if (CurrentHealth <= 0)
+            {
+                OnDeath?.Invoke();
+            }
+            else
+            {
+                OnHit?.Invoke();
             }
         }
     }

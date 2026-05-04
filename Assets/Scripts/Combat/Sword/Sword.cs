@@ -27,17 +27,17 @@ public class Sword : Weapon
     {
         if (collision.transform.TryGetComponent(out EnemyEntity enemyEntity))
         {
-            enemyEntity.TakeDamage(_damageAmount);
+            enemyEntity.TakeDamage(transform, _damageAmount);
         }
     }
     public void AttackColiderTurnOff()
     {
-        _polygonCollider2D.enabled = false;
+        if (_polygonCollider2D != null) _polygonCollider2D.enabled = false;
     }
     
     private void AttackColiderTurnOn()
     {
-        _polygonCollider2D.enabled = true;
+        if (_polygonCollider2D != null) _polygonCollider2D.enabled = true;
     }
 
     private void AttackColiderTurnOffOn()

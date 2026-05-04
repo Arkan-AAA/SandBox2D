@@ -1,5 +1,6 @@
+using UnityEngine;
+
 public interface IDamageable
 {
-    void TakeDamage(int amount);
-    void Die();
+    void TakeDamage(Transform damageSource, int amount);
 }

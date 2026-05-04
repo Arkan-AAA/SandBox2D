@@ -28,7 +28,7 @@ public class SwordVisual : MonoBehaviour
     {
         if (isAttackHeld && Time.time - lastAttackTime >= attackCooldown)
         {
-            TriggerAttack();
+            sword.Attack();
         }
     }
 

@@ -1,24 +1,45 @@
-using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Satyr.Utils;
+using Enemies;
+using Other;
 
 public class EnemyAI : MonoBehaviour
 {
-    [SerializeField] private State startingState;
-    [SerializeField] private float roamingDistanceMax = 7f;
-    [SerializeField] private float roamingDistanceMin = 3f;
-    [SerializeField] private float roamingTimerMax = 2f;
+    [SerializeField] private State _startingState;
+    [SerializeField] private float _roamingDistanceMax = 7f;
+    [SerializeField] private float _roamingDistanceMin = 3f;
+    [SerializeField] private float _roamingTimerMax = 2f;
+    [SerializeField] private float _chaseRange = 8f;
+    [SerializeField] private float _attackRange = 1.5f;
+    [SerializeField] private float _attackCooldown = 1.2f;
+    [SerializeField] private int _attackDamage = 10;
+    [SerializeField] private float _roamAnimSpeed = 1f;
+    [SerializeField] private float _chaseAnimSpeed = 1.5f;
 
-    private NavMeshAgent navMeshAgent;
+#if UNITY_EDITOR
+    [Header("Debug")]
+    [SerializeField] private bool _isChasingEnemy;
+    [SerializeField] private bool _isAttackingEnemy;
+#endif
+
+    private NavMeshAgent _navMeshAgent;
     private State state;
     private float roamingTime;
     private Vector3 roamPosition;
     private Vector3 startingPosition;
     private Animator animator;
-    
+
     private const string IS_MOVING = "IsMoving";
-    
+    private const string IS_CHASING = "IsChasing";
+    private const string ATTACK = "Attack";
+    private const string HIT = "Hit";
+    private const string DEATH = "Death";
+
+    private float _attackTimer;
+    private EnemyEntity _enemyEntity;
+    private KnockBack _knockBack;
+
     private enum State
     {
         Idle,
@@ -27,74 +48,151 @@ public class EnemyAI : MonoBehaviour
         Attacking,
         Death
     }
-    
-    private void Start()
-    {
-        startingPosition = transform.position;
-    }
 
     private void Awake()
     {
-        navMeshAgent = GetComponent<NavMeshAgent>();
-        navMeshAgent.updateUpAxis = false;
-        navMeshAgent.updateRotation = false;
-        
+        _navMeshAgent = GetComponent<NavMeshAgent>();
+        _navMeshAgent.updateUpAxis = false;
+        _navMeshAgent.updateRotation = false;
+
         var rb = GetComponent<Rigidbody2D>();
-        if (rb != null) rb.freezeRotation = true; 
-        
-        state = startingState;
-        roamingTime = UnityEngine.Random.Range(0f, roamingTimerMax);
-        
+        if (rb != null) rb.freezeRotation = true;
+
+        state = _startingState;
+        roamingTime = Random.Range(0f, _roamingTimerMax);
+
         animator = GetComponentInChildren<Animator>();
+    }
+
+    private void Start()
+    {
+        startingPosition = transform.position;
+
+        _enemyEntity = GetComponent<EnemyEntity>();
+        _knockBack = GetComponent<KnockBack>();
+        _enemyEntity.OnHit += () => animator.SetTrigger(HIT);
+        _enemyEntity.OnDeath += OnDeath;
     }
 
     private void Update()
     {
-        bool isMoving = navMeshAgent.velocity.magnitude > 0.1f;
+        if (Player.Instance == null) return;
+        if (_knockBack != null && _knockBack.IsGettingKnockedBack)
+        {
+            _navMeshAgent.ResetPath();
+            return;
+        }
+
+#if UNITY_EDITOR
+        if (_isAttackingEnemy) { state = State.Attacking; }
+        else if (_isChasingEnemy) { state = State.Chasing; }
+#endif
+
+        bool isMoving = _navMeshAgent.velocity.magnitude > 0.1f;
         animator.SetBool(IS_MOVING, isMoving);
-        
+
+        float distToPlayer = Vector3.Distance(transform.position, Player.Instance.transform.position);
+
         switch (state)
         {
             case State.Idle:
-                roamingTime -= Time.deltaTime;
-                if (roamingTime < 0)
+                if (distToPlayer < _chaseRange)
                 {
-                    Roaming();
+                    state = State.Chasing;
+                    break;
                 }
+                roamingTime -= Time.deltaTime;
+                if (roamingTime < 0) Roaming();
                 break;
 
             case State.Roaming:
-                if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.2f)
+                if (distToPlayer < _chaseRange)
+                {
+                    state = State.Chasing;
+                    break;
+                }
+                if (!_navMeshAgent.pathPending && _navMeshAgent.remainingDistance < 0.2f)
                 {
                     state = State.Idle;
-                    roamingTime = UnityEngine.Random.Range(1f, roamingTimerMax);
+                    roamingTime = Random.Range(1f, _roamingTimerMax);
                 }
                 break;
-            
+
             case State.Chasing:
+                if (distToPlayer > _chaseRange)
+                {
+                    state = State.Roaming;
+                    Roaming();
+                    break;
+                }
+                if (distToPlayer < _attackRange)
+                {
+                    state = State.Attacking;
+                    _navMeshAgent.ResetPath();
+                    _attackTimer = 0f;
+                    break;
+                }
+                _navMeshAgent.SetDestination(Player.Instance.transform.position);
+                ChangeFacingDirection(transform.position, Player.Instance.transform.position);
                 break;
+
             case State.Attacking:
+                _attackTimer -= Time.deltaTime;
+                if (_attackTimer <= 0f)
+                {
+                    animator.SetTrigger(ATTACK);
+                    _attackTimer = _attackCooldown;
+                }
+                if (distToPlayer > _attackRange)
+                {
+                    state = State.Chasing;
+                }
                 break;
+
             case State.Death:
                 break;
         }
-        
-        if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.2f)
+
+        bool isChasing = state == State.Chasing;
+        animator.SetBool(IS_CHASING, isChasing);
+        animator.speed = isChasing ? _chaseAnimSpeed : _roamAnimSpeed;
+    }
+
+    private void OnDeath()
+    {
+        state = State.Death;
+        _navMeshAgent.ResetPath();
+        animator.SetTrigger(DEATH);
+        foreach (var col in GetComponents<Collider2D>())
+            col.enabled = false;
+    }
+
+    public void DealDamage()
+    {
+        if (Player.Instance == null) return;
+        float dist = Vector3.Distance(transform.position, Player.Instance.transform.position);
+        if (dist < _attackRange)
         {
-            Roaming();
+            Player.Instance.TakeDamage(transform, _attackDamage);
         }
     }
-    
+
+    public void DestroyEnemy()
+    {
+        Destroy(gameObject);
+    }
+
     private void Roaming()
     {
         roamPosition = GetRoamingPosition();
-        navMeshAgent.SetDestination(roamPosition);
+        _navMeshAgent.SetDestination(roamPosition);
         ChangeFacingDirection(startingPosition, roamPosition);
-        roamingTime = UnityEngine.Random.Range(1f, 3f);
+        roamingTime = Random.Range(1f, 3f);
     }
-    
-    private Vector3 GetRoamingPosition() {
-        Vector3 randomDirection = Utils.GetRandomDir() * UnityEngine.Random.Range(roamingDistanceMin, roamingDistanceMax);
+
+    private Vector3 GetRoamingPosition()
+    {
+        Vector3 randomDirection = Utils.GetRandomDir() * Random.Range(_roamingDistanceMin, _roamingDistanceMax);
         Vector3 targetPosition = startingPosition + randomDirection;
 
         NavMeshHit hit;
@@ -108,15 +206,8 @@ public class EnemyAI : MonoBehaviour
 
     private void ChangeFacingDirection(Vector3 sourcePosition, Vector3 targetPosition)
     {
-        if (targetPosition.x < sourcePosition.x)
-        {
-            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-        }
-        else
-        {
-            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
-        }
+        transform.rotation = targetPosition.x < sourcePosition.x
+            ? Quaternion.Euler(0f, 180f, 0f)
+            : Quaternion.Euler(0f, 0f, 0f);
     }
 }
-
-

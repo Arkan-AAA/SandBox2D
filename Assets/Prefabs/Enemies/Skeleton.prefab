@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2746102808023689587}
   - component: {fileID: -9092721513860804028}
   - component: {fileID: 6740871651403425245}
+  - component: {fileID: 5319147396385084062}
   m_Layer: 0
   m_Name: Skeleton
   m_TagString: Untagged
@@ -144,10 +145,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18f0b8a8914d8b89a2746e35a0f1619, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemiAI
-  startingState: 1
-  roamingDistanceMax: 7
-  roamingDistanceMin: 3
-  roamingTimerMax: 2
+  _startingState: 0
+  _roamingDistanceMax: 7
+  _roamingDistanceMin: 3
+  _roamingTimerMax: 2
+  _chaseRange: 8
+  _attackRange: 1.5
+  _attackCooldown: 1.2
+  _attackDamage: 10
+  _roamAnimSpeed: 1
+  _chaseAnimSpeed: 1.5
+  _isChasingEnemy: 0
+  _isAttackingEnemy: 0
 --- !u!114 &6740871651403425245
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -160,7 +169,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4db858bc332d42f191fac34915dd49d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyEntity
-  _maxHealth: 100
+  _enemySO: {fileID: 11400000, guid: 8e9bbb3d433aa253c8e7a70cbc4407d6, type: 2}
+--- !u!114 &5319147396385084062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814149017079919845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac868bfb88084032a1851d82be79d81f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Other.KnockBack
+  _knockBackForce: 3
+  _knockBackMovingTimerMax: 0.3
 --- !u!1 &4073208052435799512
 GameObject:
   m_ObjectHideFlags: 0
@@ -263,6 +286,7 @@ GameObject:
   - component: {fileID: 3764048926136763426}
   - component: {fileID: 6293555973920230384}
   - component: {fileID: 1681511074144569397}
+  - component: {fileID: 4029476750213565675}
   m_Layer: 0
   m_Name: SkeletonVisual
   m_TagString: Untagged
@@ -367,3 +391,15 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4029476750213565675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5550040115668052146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd8404eeded1c59b696128b3bdd887a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimationEvents

@@ -12,9 +12,9 @@ public class ActiveWeapon : MonoBehaviour {
 
     public Weapon GetActiveWeapon() => currentWeapon;
 
-    public void Attack() => currentWeapon.Attack();
-    public void AttackHeld() => currentWeapon.AttackHeld();
-    public void AttackReleased() => currentWeapon.AttackReleased();
+    public void Attack() { if (currentWeapon != null) currentWeapon.Attack(); }
+    public void AttackHeld() { if (currentWeapon != null) currentWeapon.AttackHeld(); }
+    public void AttackReleased() { if (currentWeapon != null) currentWeapon.AttackReleased(); }
     
         private void Update()
     {
