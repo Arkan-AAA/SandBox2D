@@ -3,12 +3,10 @@ using Other;
 using ScriptableObjects;
 using UnityEngine;
 
-namespace Enemies
-{
+namespace Enemies {
     [RequireComponent(typeof(BoxCollider2D))]
     [RequireComponent(typeof(EnemyAI))]
-    public class EnemyEntity : MonoBehaviour
-    {
+    public class EnemyEntity : MonoBehaviour {
         [SerializeField]
         private EnemySO _enemySO;
 
@@ -19,24 +17,20 @@ namespace Enemies
 
         private KnockBack _knockBack;
 
-        private void Start()
-        {
+        private void Start() {
             CurrentHealth = _enemySO.enemyHealth;
             _knockBack = GetComponent<KnockBack>();
         }
 
-        public void TakeDamage(Transform damageSource, int damage)
-        {
+        public void TakeDamage(Transform damageSource, int damage) {
             if (CurrentHealth <= 0)
                 return;
             CurrentHealth -= damage;
             _knockBack?.GetKnockedBack(damageSource);
-            if (CurrentHealth <= 0)
-            {
+            if (CurrentHealth <= 0) {
                 OnDeath?.Invoke();
             }
-            else
-            {
+            else {
                 OnHit?.Invoke();
             }
         }

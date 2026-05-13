@@ -6,8 +6,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
-public class EnemyAI : MonoBehaviour
-{
+public class EnemyAI : MonoBehaviour {
     [SerializeField]
     private State _startingState;
 
@@ -66,8 +65,7 @@ public class EnemyAI : MonoBehaviour
     private EnemyEntity _enemyEntity;
     private KnockBack _knockBack;
 
-    private enum State
-    {
+    private enum State {
         Idle,
         Roaming,
         Chasing,
@@ -75,8 +73,7 @@ public class EnemyAI : MonoBehaviour
         Death,
     }
 
-    private void Awake()
-    {
+    private void Awake() {
         _navMeshAgent = GetComponent<NavMeshAgent>();
         _navMeshAgent.updateUpAxis = false;
         _navMeshAgent.updateRotation = false;
@@ -91,8 +88,7 @@ public class EnemyAI : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         startingPosition = transform.position;
 
         _enemyEntity = GetComponent<EnemyEntity>();
@@ -101,23 +97,19 @@ public class EnemyAI : MonoBehaviour
         _enemyEntity.OnDeath += OnDeath;
     }
 
-    private void Update()
-    {
+    private void Update() {
         if (Player.Instance == null)
             return;
-        if (_knockBack != null && _knockBack.IsGettingKnockedBack)
-        {
+        if (_knockBack != null && _knockBack.IsGettingKnockedBack) {
             _navMeshAgent.ResetPath();
             return;
         }
 
 #if UNITY_EDITOR
-        if (_isAttackingEnemy)
-        {
+        if (_isAttackingEnemy) {
             state = State.Attacking;
         }
-        else if (_isChasingEnemy)
-        {
+        else if (_isChasingEnemy) {
             state = State.Chasing;
         }
 #endif
@@ -130,11 +122,9 @@ public class EnemyAI : MonoBehaviour
             Player.Instance.transform.position
         );
 
-        switch (state)
-        {
+        switch (state) {
             case State.Idle:
-                if (distToPlayer < _chaseRange)
-                {
+                if (distToPlayer < _chaseRange) {
                     state = State.Chasing;
                     break;
                 }
@@ -144,27 +134,23 @@ public class EnemyAI : MonoBehaviour
                 break;
 
             case State.Roaming:
-                if (distToPlayer < _chaseRange)
-                {
+                if (distToPlayer < _chaseRange) {
                     state = State.Chasing;
                     break;
                 }
-                if (!_navMeshAgent.pathPending && _navMeshAgent.remainingDistance < 0.2f)
-                {
+                if (!_navMeshAgent.pathPending && _navMeshAgent.remainingDistance < 0.2f) {
                     state = State.Idle;
                     roamingTime = Random.Range(1f, _roamingTimerMax);
                 }
                 break;
 
             case State.Chasing:
-                if (distToPlayer > _chaseRange)
-                {
+                if (distToPlayer > _chaseRange) {
                     state = State.Roaming;
                     Roaming();
                     break;
                 }
-                if (distToPlayer < _attackRange)
-                {
+                if (distToPlayer < _attackRange) {
                     state = State.Attacking;
                     _navMeshAgent.ResetPath();
                     _attackTimer = 0f;
@@ -176,13 +162,11 @@ public class EnemyAI : MonoBehaviour
 
             case State.Attacking:
                 _attackTimer -= Time.deltaTime;
-                if (_attackTimer <= 0f)
-                {
+                if (_attackTimer <= 0f) {
                     animator.SetTrigger(ATTACK);
                     _attackTimer = _attackCooldown;
                 }
-                if (distToPlayer > _attackRange)
-                {
+                if (distToPlayer > _attackRange) {
                     state = State.Chasing;
                 }
                 break;
@@ -198,17 +182,14 @@ public class EnemyAI : MonoBehaviour
 
     private void OnHit() => animator.SetTrigger(HIT);
 
-    private void OnDestroy()
-    {
-        if (_enemyEntity != null)
-        {
+    private void OnDestroy() {
+        if (_enemyEntity != null) {
             _enemyEntity.OnHit -= OnHit;
             _enemyEntity.OnDeath -= OnDeath;
         }
     }
 
-    private void OnDeath()
-    {
+    private void OnDeath() {
         state = State.Death;
         _navMeshAgent.ResetPath();
         animator.SetTrigger(DEATH);
@@ -216,47 +197,40 @@ public class EnemyAI : MonoBehaviour
             col.enabled = false;
     }
 
-    public void DealDamage()
-    {
+    public void DealDamage() {
         if (Player.Instance == null)
             return;
         float dist = Vector3.Distance(transform.position, Player.Instance.transform.position);
-        if (dist < _attackRange)
-        {
+        if (dist < _attackRange) {
             Player.Instance.TakeDamage(transform, _attackDamage);
         }
     }
 
-    public void DestroyEnemy()
-    {
+    public void DestroyEnemy() {
         Destroy(gameObject);
     }
 
-    private void Roaming()
-    {
+    private void Roaming() {
         roamPosition = GetRoamingPosition();
         _navMeshAgent.SetDestination(roamPosition);
         ChangeFacingDirection(startingPosition, roamPosition);
         roamingTime = Random.Range(1f, 3f);
     }
 
-    private Vector3 GetRoamingPosition()
-    {
+    private Vector3 GetRoamingPosition() {
         Vector3 randomDirection =
             Utils.GetRandomDir() * Random.Range(_roamingDistanceMin, _roamingDistanceMax);
         Vector3 targetPosition = startingPosition + randomDirection;
 
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(targetPosition, out hit, 2f, NavMesh.AllAreas))
-        {
+        if (NavMesh.SamplePosition(targetPosition, out hit, 2f, NavMesh.AllAreas)) {
             return hit.position;
         }
 
         return transform.position;
     }
 
-    private void ChangeFacingDirection(Vector3 sourcePosition, Vector3 targetPosition)
-    {
+    private void ChangeFacingDirection(Vector3 sourcePosition, Vector3 targetPosition) {
         transform.rotation =
             targetPosition.x < sourcePosition.x
                 ? Quaternion.Euler(0f, 180f, 0f)
