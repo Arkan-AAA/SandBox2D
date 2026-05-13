@@ -7,7 +7,5 @@ namespace NavMeshPlus.Extensions
 {
     [System.Serializable]
     // See also NavMeshAreaAttributePropertyDrawer
-    public class NavMeshAreaAttribute : PropertyAttribute
-    {
-    }
+    public class NavMeshAreaAttribute : PropertyAttribute { }
 }

@@ -9,7 +9,8 @@ namespace Enemies
     [RequireComponent(typeof(EnemyAI))]
     public class EnemyEntity : MonoBehaviour
     {
-        [SerializeField] private EnemySO _enemySO;
+        [SerializeField]
+        private EnemySO _enemySO;
 
         public int CurrentHealth { get; private set; }
 
@@ -26,7 +27,8 @@ namespace Enemies
 
         public void TakeDamage(Transform damageSource, int damage)
         {
-            if (CurrentHealth <= 0) return;
+            if (CurrentHealth <= 0)
+                return;
             CurrentHealth -= damage;
             _knockBack?.GetKnockedBack(damageSource);
             if (CurrentHealth <= 0)

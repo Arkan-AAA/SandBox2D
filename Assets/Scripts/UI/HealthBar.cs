@@ -1,12 +1,17 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class HealthBar : MonoBehaviour
 {
-    [SerializeField] private Image _healthImage;
-    [SerializeField] private Sprite[] _healthSprites;
-    [SerializeField] private TMP_Text _healthText; 
+    [SerializeField]
+    private Image _healthImage;
+
+    [SerializeField]
+    private Sprite[] _healthSprites;
+
+    [SerializeField]
+    private TMP_Text _healthText;
 
     private void Start()
     {
@@ -36,7 +41,7 @@ public class HealthBar : MonoBehaviour
             _healthSprites.Length - 1
         );
         _healthImage.sprite = _healthSprites[index];
-        
+
         _healthText.text = current + " / " + max;
     }
 }

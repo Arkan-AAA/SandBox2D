@@ -1,5 +1,5 @@
-using NavMeshPlus.Components;
 using System.Collections.Generic;
+using NavMeshPlus.Components;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Tilemaps;
@@ -10,9 +10,14 @@ namespace NavMeshPlus.Extensions
     [AddComponentMenu("Navigation/Navigation CacheTilemapSources2d", 30)]
     public class CollectTilemapSourcesCache2d : NavMeshExtension
     {
-        [SerializeField] private Tilemap _tilemap;
-        [SerializeField] private NavMeshModifier _modifier;
-        [SerializeField] private NavMeshModifierTilemap _modifierTilemap;
+        [SerializeField]
+        private Tilemap _tilemap;
+
+        [SerializeField]
+        private NavMeshModifier _modifier;
+
+        [SerializeField]
+        private NavMeshModifierTilemap _modifierTilemap;
 
         private List<NavMeshBuildSource> _sources;
         private Dictionary<Vector3Int, int> _lookup;
@@ -35,7 +40,13 @@ namespace NavMeshPlus.Extensions
                 foreach (Tilemap.SyncTile syncTile in syncTiles)
                 {
                     Vector3Int position = syncTile.position;
-                    if (syncTile.tile != null && _modifierMap.TryGetValue(syncTile.tile, out NavMeshModifierTilemap.TileModifier tileModifier))
+                    if (
+                        syncTile.tile != null
+                        && _modifierMap.TryGetValue(
+                            syncTile.tile,
+                            out NavMeshModifierTilemap.TileModifier tileModifier
+                        )
+                    )
                     {
                         int i = _lookup[position];
                         NavMeshBuildSource source = _sources[i];
@@ -54,10 +65,14 @@ namespace NavMeshPlus.Extensions
         }
 #endif
 
-
         public AsyncOperation UpdateNavMesh(NavMeshData data)
         {
-            return NavMeshBuilder.UpdateNavMeshDataAsync(data, NavMeshSurfaceOwner.GetBuildSettings(), _sources, data.sourceBounds);
+            return NavMeshBuilder.UpdateNavMeshDataAsync(
+                data,
+                NavMeshSurfaceOwner.GetBuildSettings(),
+                _sources,
+                data.sourceBounds
+            );
         }
 
         public AsyncOperation UpdateNavMesh()
@@ -65,7 +80,11 @@ namespace NavMeshPlus.Extensions
             return UpdateNavMesh(NavMeshSurfaceOwner.navMeshData);
         }
 
-        public override void PostCollectSources(NavMeshSurface surface, List<NavMeshBuildSource> sources, NavMeshBuilderState navNeshState)
+        public override void PostCollectSources(
+            NavMeshSurface surface,
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilderState navNeshState
+        )
         {
             _sources = sources;
             if (_lookup == null)
@@ -78,17 +97,17 @@ namespace NavMeshPlus.Extensions
                     _lookup[position] = i;
                 }
             }
-            #if UNITY_EDITOR || UNITY_2022_2_OR_NEWER
+#if UNITY_EDITOR || UNITY_2022_2_OR_NEWER
             Tilemap.tilemapTileChanged -= OnTilemapTileChanged;
             Tilemap.tilemapTileChanged += OnTilemapTileChanged;
-            #endif
+#endif
         }
 
         protected override void OnDestroy()
         {
-            #if UNITY_EDITOR || UNITY_2022_2_OR_NEWER
+#if UNITY_EDITOR || UNITY_2022_2_OR_NEWER
             Tilemap.tilemapTileChanged -= OnTilemapTileChanged;
-            #endif
+#endif
             base.OnDestroy();
         }
     }

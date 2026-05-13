@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor.SceneManagement;
-using UnityEngine.AI;
-using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.AI;
 
 namespace NavMeshPlus.Components.Editors
 {
@@ -17,7 +17,11 @@ namespace NavMeshPlus.Components.Editors
         }
 
         List<AsyncBakeOperation> m_BakeOperations = new List<AsyncBakeOperation>();
-        internal List<AsyncBakeOperation> GetBakeOperations() { return m_BakeOperations; }
+
+        internal List<AsyncBakeOperation> GetBakeOperations()
+        {
+            return m_BakeOperations;
+        }
 
         struct SavedPrefabNavMeshData
         {
@@ -35,12 +39,16 @@ namespace NavMeshPlus.Components.Editors
             var targetPath = "Assets";
             if (!string.IsNullOrEmpty(activeScenePath))
             {
-                targetPath = Path.Combine(Path.GetDirectoryName(activeScenePath), Path.GetFileNameWithoutExtension(activeScenePath));
+                targetPath = Path.Combine(
+                    Path.GetDirectoryName(activeScenePath),
+                    Path.GetFileNameWithoutExtension(activeScenePath)
+                );
             }
             else
             {
                 var prefabStage = PrefabStageUtility.GetPrefabStage(surface.gameObject);
-                var isPartOfPrefab = prefabStage != null && prefabStage.IsPartOfPrefabContents(surface.gameObject);
+                var isPartOfPrefab =
+                    prefabStage != null && prefabStage.IsPartOfPrefabContents(surface.gameObject);
 
                 if (isPartOfPrefab)
                 {
@@ -73,17 +81,22 @@ namespace NavMeshPlus.Components.Editors
 
         NavMeshData GetNavMeshAssetToDelete(NavMeshSurface navSurface)
         {
-            if (PrefabUtility.IsPartOfPrefabInstance(navSurface) && !PrefabUtility.IsPartOfModelPrefab(navSurface))
+            if (
+                PrefabUtility.IsPartOfPrefabInstance(navSurface)
+                && !PrefabUtility.IsPartOfModelPrefab(navSurface)
+            )
             {
                 // Don't allow deleting the asset belonging to the prefab parent
-                var parentSurface = PrefabUtility.GetCorrespondingObjectFromSource(navSurface) as NavMeshSurface;
+                var parentSurface =
+                    PrefabUtility.GetCorrespondingObjectFromSource(navSurface) as NavMeshSurface;
                 if (parentSurface && navSurface.navMeshData == parentSurface.navMeshData)
                     return null;
             }
 
             // Do not delete the NavMeshData asset referenced from a prefab until the prefab is saved
             var prefabStage = PrefabStageUtility.GetPrefabStage(navSurface.gameObject);
-            var isPartOfPrefab = prefabStage != null && prefabStage.IsPartOfPrefabContents(navSurface.gameObject);
+            var isPartOfPrefab =
+                prefabStage != null && prefabStage.IsPartOfPrefabContents(navSurface.gameObject);
             if (isPartOfPrefab && IsCurrentPrefabNavMeshDataStored(navSurface))
                 return null;
 
@@ -132,8 +145,13 @@ namespace NavMeshPlus.Components.Editors
         {
             var emptySources = new List<NavMeshBuildSource>();
             var emptyBounds = new Bounds();
-            return UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(surface.GetBuildSettings(), emptySources, emptyBounds
-                , surface.transform.position, surface.transform.rotation);
+            return UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(
+                surface.GetBuildSettings(),
+                emptySources,
+                emptyBounds,
+                surface.transform.position,
+                surface.transform.rotation
+            );
         }
 
         void UpdateAsyncBuildOperations()
@@ -198,7 +216,9 @@ namespace NavMeshPlus.Components.Editors
         void StoreNavMeshDataIfInPrefab(NavMeshSurface surfaceToStore)
         {
             var prefabStage = PrefabStageUtility.GetPrefabStage(surfaceToStore.gameObject);
-            var isPartOfPrefab = prefabStage != null && prefabStage.IsPartOfPrefabContents(surfaceToStore.gameObject);
+            var isPartOfPrefab =
+                prefabStage != null
+                && prefabStage.IsPartOfPrefabContents(surfaceToStore.gameObject);
             if (!isPartOfPrefab)
                 return;
 
@@ -217,12 +237,25 @@ namespace NavMeshPlus.Components.Editors
             }
 
             var isDataOwner = true;
-            if (PrefabUtility.IsPartOfPrefabInstance(surfaceToStore) && !PrefabUtility.IsPartOfModelPrefab(surfaceToStore))
+            if (
+                PrefabUtility.IsPartOfPrefabInstance(surfaceToStore)
+                && !PrefabUtility.IsPartOfModelPrefab(surfaceToStore)
+            )
             {
-                var basePrefabSurface = PrefabUtility.GetCorrespondingObjectFromSource(surfaceToStore) as NavMeshSurface;
-                isDataOwner = basePrefabSurface == null || surfaceToStore.navMeshData != basePrefabSurface.navMeshData;
+                var basePrefabSurface =
+                    PrefabUtility.GetCorrespondingObjectFromSource(surfaceToStore)
+                    as NavMeshSurface;
+                isDataOwner =
+                    basePrefabSurface == null
+                    || surfaceToStore.navMeshData != basePrefabSurface.navMeshData;
             }
-            m_PrefabNavMeshDataAssets.Add(new SavedPrefabNavMeshData { surface = surfaceToStore, navMeshData = isDataOwner ? surfaceToStore.navMeshData : null });
+            m_PrefabNavMeshDataAssets.Add(
+                new SavedPrefabNavMeshData
+                {
+                    surface = surfaceToStore,
+                    navMeshData = isDataOwner ? surfaceToStore.navMeshData : null,
+                }
+            );
         }
 
         bool IsCurrentPrefabNavMeshDataStored(NavMeshSurface surface)
@@ -281,7 +314,8 @@ namespace NavMeshPlus.Components.Editors
             if (prefabStage == null)
                 return;
 
-            var allSurfacesInPrefab = prefabStage.prefabContentsRoot.GetComponentsInChildren<NavMeshSurface>(true);
+            var allSurfacesInPrefab =
+                prefabStage.prefabContentsRoot.GetComponentsInChildren<NavMeshSurface>(true);
             NavMeshSurface surfaceInPrefab = null;
             var index = 0;
             do
@@ -299,7 +333,9 @@ namespace NavMeshPlus.Components.Editors
                         // surface got deleted, thus delete its initial NavMeshData asset
                         if (storedPrefabInfo.navMeshData != null)
                         {
-                            var assetPath = AssetDatabase.GetAssetPath(storedPrefabInfo.navMeshData);
+                            var assetPath = AssetDatabase.GetAssetPath(
+                                storedPrefabInfo.navMeshData
+                            );
                             AssetDatabase.DeleteAsset(assetPath);
                         }
 
@@ -309,8 +345,13 @@ namespace NavMeshPlus.Components.Editors
                     {
                         //Debug.LogFormat("The surface {0} from the prefab was storing the original navmesh data and now will be forgotten", surfaceInPrefab);
 
-                        var baseSurface = PrefabUtility.GetCorrespondingObjectFromSource(surfaceInPrefab) as NavMeshSurface;
-                        if (baseSurface == null || surfaceInPrefab.navMeshData != baseSurface.navMeshData)
+                        var baseSurface =
+                            PrefabUtility.GetCorrespondingObjectFromSource(surfaceInPrefab)
+                            as NavMeshSurface;
+                        if (
+                            baseSurface == null
+                            || surfaceInPrefab.navMeshData != baseSurface.navMeshData
+                        )
                         {
                             var assetPath = AssetDatabase.GetAssetPath(surfaceInPrefab.navMeshData);
                             AssetDatabase.DeleteAsset(assetPath);

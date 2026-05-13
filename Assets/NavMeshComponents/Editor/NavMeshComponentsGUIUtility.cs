@@ -49,7 +49,11 @@ namespace NavMeshPlus.Components.Editors
             return false;
         }
 
-        public static void AgentTypePopup(Rect rect, string labelName, SerializedProperty agentTypeID)
+        public static void AgentTypePopup(
+            Rect rect,
+            string labelName,
+            SerializedProperty agentTypeID
+        )
         {
             var index = -1;
             var count = NavMesh.GetSettingsCount();
@@ -136,7 +140,12 @@ namespace NavMeshPlus.Components.Editors
 
                     var showSelected = show && AgentMaskHasSelectedAgentTypeID(agentMask, id);
                     var userData = new object[] { agentMask, id, !showSelected };
-                    menu.AddItem(new GUIContent(sname), showSelected, ToggleAgentMaskItem, userData);
+                    menu.AddItem(
+                        new GUIContent(sname),
+                        showSelected,
+                        ToggleAgentMaskItem,
+                        userData
+                    );
                 }
 
                 menu.DropDown(popupRect);
@@ -148,7 +157,10 @@ namespace NavMeshPlus.Components.Editors
         public static GameObject CreateAndSelectGameObject(string suggestedName, GameObject parent)
         {
             var parentTransform = parent != null ? parent.transform : null;
-            var uniqueName = GameObjectUtility.GetUniqueNameForSibling(parentTransform, suggestedName);
+            var uniqueName = GameObjectUtility.GetUniqueNameForSibling(
+                parentTransform,
+                suggestedName
+            );
             var child = new GameObject(uniqueName);
 
             Undo.RegisterCreatedObjectUndo(child, "Create " + uniqueName);
@@ -204,7 +216,8 @@ namespace NavMeshPlus.Components.Editors
                 if (idx == -1)
                 {
                     agentMask.InsertArrayElementAtIndex(agentMask.arraySize);
-                    agentMask.GetArrayElementAtIndex(agentMask.arraySize - 1).intValue = agentTypeID;
+                    agentMask.GetArrayElementAtIndex(agentMask.arraySize - 1).intValue =
+                        agentTypeID;
                 }
             }
             else

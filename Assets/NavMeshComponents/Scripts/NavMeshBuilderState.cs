@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace NavMeshPlus.Extensions
 {
-    public class NavMeshBuilderState: IDisposable
+    public class NavMeshBuilderState : IDisposable
     {
         public Matrix4x4 worldToLocal;
         public Bounds worldBounds;
@@ -13,10 +13,11 @@ namespace NavMeshPlus.Extensions
         private Dictionary<Type, System.Object> mExtraState;
         private bool _disposed;
 
-        public T GetExtraState<T>(bool dispose = true) where T : class, new()
+        public T GetExtraState<T>(bool dispose = true)
+            where T : class, new()
         {
             if (mExtraState == null)
-            { 
+            {
                 mExtraState = new Dictionary<Type, System.Object>();
                 disposable = new CompositeDisposable();
             }
@@ -59,7 +60,8 @@ namespace NavMeshPlus.Extensions
             GC.SuppressFinalize(this);
         }
     }
-    partial class CompositeDisposable: IDisposable
+
+    partial class CompositeDisposable : IDisposable
     {
         private bool _disposed;
         private List<IDisposable> extraStates = new List<IDisposable>();
@@ -68,13 +70,15 @@ namespace NavMeshPlus.Extensions
         {
             extraStates.Add(dispose);
         }
+
         public void Add(object dispose)
         {
-            if(dispose is IDisposable)
+            if (dispose is IDisposable)
             {
                 extraStates.Add((IDisposable)dispose);
             }
         }
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)

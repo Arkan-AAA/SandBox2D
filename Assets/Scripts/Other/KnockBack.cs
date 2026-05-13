@@ -4,13 +4,16 @@ namespace Other
 {
     public class KnockBack : MonoBehaviour
     {
-        [SerializeField] private float _knockBackForce = 3f;
-        [SerializeField] private float _knockBackMovingTimerMax = 0.3f;
-        
+        [SerializeField]
+        private float _knockBackForce = 3f;
+
+        [SerializeField]
+        private float _knockBackMovingTimerMax = 0.3f;
+
         private float _knockBackMovingTimer;
-        
+
         private Rigidbody2D rb;
-        
+
         public bool IsGettingKnockedBack { get; private set; }
 
         private void Awake()
@@ -20,7 +23,8 @@ namespace Other
 
         private void Update()
         {
-            if (!IsGettingKnockedBack) return;
+            if (!IsGettingKnockedBack)
+                return;
             _knockBackMovingTimer -= Time.deltaTime;
             if (_knockBackMovingTimer <= 0)
             {
@@ -32,10 +36,11 @@ namespace Other
         {
             IsGettingKnockedBack = true;
             _knockBackMovingTimer = _knockBackMovingTimerMax;
-            Vector2 difference = (transform.position - damageSource.position).normalized * _knockBackForce / rb.mass;
+            Vector2 difference =
+                (transform.position - damageSource.position).normalized * _knockBackForce / rb.mass;
             rb.AddForce(difference, ForceMode2D.Impulse);
         }
-        
+
         public void StopKnockBackMovement()
         {
             rb.linearVelocity = Vector2.zero;

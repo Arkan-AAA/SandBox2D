@@ -1,7 +1,7 @@
 using System.Collections;
 using Misc;
-using UnityEngine;
 using Satyr.Utils;
+using UnityEngine;
 
 public class PlayerVisual : MonoBehaviour
 {
@@ -23,8 +23,10 @@ public class PlayerVisual : MonoBehaviour
 
     private void Update()
     {
-        if (_isDead) return;
-        if (_animator.GetBool(HIT)) return;
+        if (_isDead)
+            return;
+        if (_animator.GetBool(HIT))
+            return;
         _animator.SetBool(IS_RUNNING, Player.Instance.IsRunning());
         AdjustPlayerFacingDirection();
     }
@@ -43,7 +45,8 @@ public class PlayerVisual : MonoBehaviour
 
     private IEnumerator HitAnimation()
     {
-        if (_isDead) yield break;
+        if (_isDead)
+            yield break;
         _animator.Play("taking damage", 0, 0f);
         yield return new WaitForSeconds(0.5f);
         _animator.SetBool(HIT, false);

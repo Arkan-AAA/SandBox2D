@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Tilemaps;
 
 //***********************************************************************************
@@ -33,7 +33,10 @@ namespace NavMeshPlus.Components.Editors
 
             if (modifierTilemap.HasDuplicateTileModifiers())
             {
-                EditorGUILayout.HelpBox("There are duplicate Tile entries in the tilemap modifiers! Only the first will be used.", MessageType.Warning);
+                EditorGUILayout.HelpBox(
+                    "There are duplicate Tile entries in the tilemap modifiers! Only the first will be used.",
+                    MessageType.Warning
+                );
             }
 
             EditorGUILayout.Space();
@@ -59,7 +62,8 @@ namespace NavMeshPlus.Components.Editors
 
         private void AddUsedTiles(Tilemap tilemap, NavMeshModifierTilemap modifierTilemap)
         {
-            Dictionary<TileBase, NavMeshModifierTilemap.TileModifier> tileModifiers = modifierTilemap.GetModifierMap();
+            Dictionary<TileBase, NavMeshModifierTilemap.TileModifier> tileModifiers =
+                modifierTilemap.GetModifierMap();
 
             BoundsInt bounds = tilemap.cellBounds;
             for (int i = bounds.xMin; i <= bounds.xMax; i++)
@@ -72,12 +76,17 @@ namespace NavMeshPlus.Components.Editors
                         {
                             if (!tileModifiers.ContainsKey(tileBase))
                             {
-                                tileModifiers.Add(tileBase, new NavMeshModifierTilemap.TileModifier());
+                                tileModifiers.Add(
+                                    tileBase,
+                                    new NavMeshModifierTilemap.TileModifier()
+                                );
 
                                 int idx = m_TileModifiers.arraySize;
                                 m_TileModifiers.InsertArrayElementAtIndex(idx);
                                 var newElem = m_TileModifiers.GetArrayElementAtIndex(idx);
-                                var tileProperty = newElem.FindPropertyRelative(nameof(NavMeshModifierTilemap.TileModifier.tile));
+                                var tileProperty = newElem.FindPropertyRelative(
+                                    nameof(NavMeshModifierTilemap.TileModifier.tile)
+                                );
                                 tileProperty.objectReferenceValue = tileBase;
                             }
                         }
@@ -89,9 +98,8 @@ namespace NavMeshPlus.Components.Editors
         [CustomPropertyDrawer(typeof(NavMeshModifierTilemap.TileModifier))]
         class TileModifierPropertyDrawer : PropertyDrawer
         {
-            
             private static Dictionary<Object, Texture2D> Previews;
-            
+
             private Rect ClaimAdvance(ref Rect position, float height)
             {
                 Rect retVal = position;
@@ -107,7 +115,9 @@ namespace NavMeshPlus.Components.Editors
                 property.isExpanded = EditorGUI.Foldout(expandRect, property.isExpanded, label);
                 if (property.isExpanded)
                 {
-                    var tileProperty = property.FindPropertyRelative(nameof(NavMeshModifierTilemap.TileModifier.tile));
+                    var tileProperty = property.FindPropertyRelative(
+                        nameof(NavMeshModifierTilemap.TileModifier.tile)
+                    );
                     Rect tileRect = ClaimAdvance(ref position, 40);
                     tileRect.width -= 40;
 
@@ -130,28 +140,39 @@ namespace NavMeshPlus.Components.Editors
                     {
                         try
                         {
-                            
                             textureToDraw = GetPreview(tileBase);
                         }
                         catch
                         {
-                            textureToDraw = EditorGUIUtility.IconContent("console.erroricon.sml").image;
+                            textureToDraw = EditorGUIUtility
+                                .IconContent("console.erroricon.sml")
+                                .image;
                         }
                     }
 
                     if (textureToDraw)
                     {
-                        EditorGUI.DrawPreviewTexture(previewRect, textureToDraw, null, ScaleMode.ScaleToFit, 0);
+                        EditorGUI.DrawPreviewTexture(
+                            previewRect,
+                            textureToDraw,
+                            null,
+                            ScaleMode.ScaleToFit,
+                            0
+                        );
                     }
 
                     Rect toggleRect = ClaimAdvance(ref position, 20);
-                    var overrideAreaProperty = property.FindPropertyRelative(nameof(NavMeshModifierTilemap.TileModifier.overrideArea));
+                    var overrideAreaProperty = property.FindPropertyRelative(
+                        nameof(NavMeshModifierTilemap.TileModifier.overrideArea)
+                    );
                     EditorGUI.PropertyField(toggleRect, overrideAreaProperty);
 
                     if (overrideAreaProperty.boolValue)
                     {
                         Rect areaRect = ClaimAdvance(ref position, 20);
-                        var areaProperty = property.FindPropertyRelative(nameof(NavMeshModifierTilemap.TileModifier.area));
+                        var areaProperty = property.FindPropertyRelative(
+                            nameof(NavMeshModifierTilemap.TileModifier.area)
+                        );
                         EditorGUI.indentLevel++;
                         EditorGUI.PropertyField(areaRect, areaProperty);
                         EditorGUI.indentLevel--;
@@ -169,7 +190,12 @@ namespace NavMeshPlus.Components.Editors
                     if (objectToPreview)
                     {
                         var editor = CreateEditor(objectToPreview);
-                        preview = editor.RenderStaticPreview(path, null, maxResolution, maxResolution);
+                        preview = editor.RenderStaticPreview(
+                            path,
+                            null,
+                            maxResolution,
+                            maxResolution
+                        );
                         preview.Apply();
                         DestroyImmediate(editor);
                         Previews[objectToPreview] = preview;
@@ -183,7 +209,9 @@ namespace NavMeshPlus.Components.Editors
             {
                 if (property.isExpanded)
                 {
-                    var overrideAreaProperty = property.FindPropertyRelative(nameof(NavMeshModifierTilemap.TileModifier.overrideArea));
+                    var overrideAreaProperty = property.FindPropertyRelative(
+                        nameof(NavMeshModifierTilemap.TileModifier.overrideArea)
+                    );
                     if (overrideAreaProperty.boolValue)
                     {
                         return 100;
@@ -191,7 +219,6 @@ namespace NavMeshPlus.Components.Editors
                     return 80;
                 }
                 return 20;
-
             }
         }
     }

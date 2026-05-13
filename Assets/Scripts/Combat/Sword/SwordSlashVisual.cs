@@ -2,8 +2,11 @@ using System;
 using UnityEngine;
 
 public class SwordSlashVisual : MonoBehaviour {
-    [SerializeField] private Sword sword;
-    [SerializeField] private float attackCooldown = 0.3f;
+    [SerializeField]
+    private Sword sword;
+
+    [SerializeField]
+    private float attackCooldown = 0.3f;
 
     private static readonly int AttackHash = Animator.StringToHash("Attack");
     private Animator animator;
@@ -22,6 +25,7 @@ public class SwordSlashVisual : MonoBehaviour {
     }
 
     private void OnAttackHeld() => isAttackHeld = true;
+
     private void OnAttackReleased() => isAttackHeld = false;
 
     private void OnDestroy() {
@@ -43,7 +47,8 @@ public class SwordSlashVisual : MonoBehaviour {
     }
 
     private void TriggerAttack() {
-        if (Time.time - lastAttackTime < attackCooldown) return;
+        if (Time.time - lastAttackTime < attackCooldown)
+            return;
         lastAttackTime = Time.time;
         animator.ResetTrigger(AttackHash);
         animator.SetTrigger(AttackHash);

@@ -5,9 +5,14 @@ namespace Misc
 {
     public class FlashBlink : MonoBehaviour
     {
-        [SerializeField] private MonoBehaviour _damagebleObject;
-        [SerializeField] private Material _blinkMaterial;
-        [SerializeField] private float _blinkDuration = 0.2f;
+        [SerializeField]
+        private MonoBehaviour _damagebleObject;
+
+        [SerializeField]
+        private Material _blinkMaterial;
+
+        [SerializeField]
+        private float _blinkDuration = 0.2f;
 
         private float blinkTimer;
         private Material defaultMaterial;
@@ -33,8 +38,8 @@ namespace Misc
         private void DamagebleObject_OnFlashBlink(object sender, EventArgs e)
         {
             SetBlinkingMaterial();
-        }     
-        
+        }
+
         private void Update()
         {
             if (isBlinking)
@@ -63,7 +68,7 @@ namespace Misc
             SetDefaultMaterial();
             isBlinking = false;
         }
-        
+
         private void OnDestroy()
         {
             if (_damagebleObject is Player)

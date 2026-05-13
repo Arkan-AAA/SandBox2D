@@ -1,6 +1,9 @@
-namespace Satyr.Utils {
-    public static class LookDirectionHelper {
-        public static float GetLookX() {
+namespace Satyr.Utils
+{
+    public static class LookDirectionHelper
+    {
+        public static float GetLookX()
+        {
             // Правый стик — приоритет (прицеливание)
             if (GameInput.Instance.IsGamepadActive())
                 return GameInput.Instance.GetGamepadLookVector().x;

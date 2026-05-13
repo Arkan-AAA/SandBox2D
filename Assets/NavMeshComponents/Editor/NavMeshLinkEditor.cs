@@ -20,7 +20,8 @@ namespace NavMeshPlus.Components.Editors
         static int s_SelectedPoint = -1;
 
         static Color s_HandleColor = new Color(255f, 167f, 39f, 210f) / 255;
-        static Color s_HandleColorDisabled = new Color(255f * 0.75f, 167f * 0.75f, 39f * 0.75f, 100f) / 255;
+        static Color s_HandleColorDisabled =
+            new Color(255f * 0.75f, 167f * 0.75f, 39f * 0.75f, 100f) / 255;
 
         void OnEnable()
         {
@@ -35,11 +36,7 @@ namespace NavMeshPlus.Components.Editors
 
             s_SelectedID = 0;
             s_SelectedPoint = -1;
-
-
         }
-
-
 
         static Matrix4x4 UnscaledLocalToWorldMatrix(Transform t)
         {
@@ -131,9 +128,7 @@ namespace NavMeshPlus.Components.Editors
             Gizmos.DrawLine(navLink.startPoint + right * rad, navLink.endPoint + right * rad);
         }
 
-
         [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.Active | GizmoType.Pickable)]
-
         static void RenderBoxGizmo(NavMeshLink navLink, GizmoType gizmoType)
         {
             if (!EditorApplication.isPlaying && navLink.isActiveAndEnabled)
@@ -219,7 +214,15 @@ namespace NavMeshPlus.Components.Editors
             }
             else
             {
-                if (Handles.Button(startPt, zup, 0.1f * startSize, 0.1f * startSize, Handles.CubeHandleCap))
+                if (
+                    Handles.Button(
+                        startPt,
+                        zup,
+                        0.1f * startSize,
+                        0.1f * startSize,
+                        Handles.CubeHandleCap
+                    )
+                )
                 {
                     s_SelectedPoint = 0;
                     s_SelectedID = navLink.GetInstanceID();
@@ -239,7 +242,15 @@ namespace NavMeshPlus.Components.Editors
             }
             else
             {
-                if (Handles.Button(endPt, zup, 0.1f * endSize, 0.1f * endSize, Handles.CubeHandleCap))
+                if (
+                    Handles.Button(
+                        endPt,
+                        zup,
+                        0.1f * endSize,
+                        0.1f * endSize,
+                        Handles.CubeHandleCap
+                    )
+                )
                 {
                     s_SelectedPoint = 1;
                     s_SelectedID = navLink.GetInstanceID();
@@ -247,7 +258,13 @@ namespace NavMeshPlus.Components.Editors
             }
 
             EditorGUI.BeginChangeCheck();
-            pos = Handles.Slider(midPt + right * navLink.width * 0.5f, right, midSize * 0.03f, Handles.DotHandleCap, 0);
+            pos = Handles.Slider(
+                midPt + right * navLink.width * 0.5f,
+                right,
+                midSize * 0.03f,
+                Handles.DotHandleCap,
+                0
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(navLink, "Adjust link width");
@@ -255,7 +272,13 @@ namespace NavMeshPlus.Components.Editors
             }
 
             EditorGUI.BeginChangeCheck();
-            pos = Handles.Slider(midPt - right * navLink.width * 0.5f, -right, midSize * 0.03f, Handles.DotHandleCap, 0);
+            pos = Handles.Slider(
+                midPt - right * navLink.width * 0.5f,
+                -right,
+                midSize * 0.03f,
+                Handles.DotHandleCap,
+                0
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(navLink, "Adjust link width");
@@ -269,7 +292,10 @@ namespace NavMeshPlus.Components.Editors
         public static void CreateNavMeshLink(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            GameObject go = NavMeshComponentsGUIUtility.CreateAndSelectGameObject("NavMesh Link", parent);
+            GameObject go = NavMeshComponentsGUIUtility.CreateAndSelectGameObject(
+                "NavMesh Link",
+                parent
+            );
             go.AddComponent<NavMeshLink>();
             var view = SceneView.lastActiveSceneView;
             if (view != null)

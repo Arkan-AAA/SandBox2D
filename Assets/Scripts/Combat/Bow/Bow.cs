@@ -1,19 +1,25 @@
 using System;
 
-namespace Combat {
+namespace Combat
+{
     // Лук (в будущем)
-    public class Bow : Weapon {
-        public event EventHandler OnBowDraw;    // натяжение
+    public class Bow : Weapon
+    {
+        public event EventHandler OnBowDraw; // натяжение
         public event EventHandler OnBowRelease; // выстрел
 
-        public override void Attack() {
+        public override void Attack()
+        {
             AttackHeld();
         }
-        public override void AttackHeld() {
+
+        public override void AttackHeld()
+        {
             OnBowDraw?.Invoke(this, EventArgs.Empty);
         }
 
-        public override void AttackReleased() {
+        public override void AttackReleased()
+        {
             OnBowRelease?.Invoke(this, EventArgs.Empty);
         }
     }

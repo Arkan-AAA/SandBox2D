@@ -7,7 +7,7 @@ using UnityEngine.AI;
 //***********************************************************************************
 namespace NavMeshPlus.Extensions
 {
-    public class RotateAgentSmoothly: IAgentOverride
+    public class RotateAgentSmoothly : IAgentOverride
     {
         public RotateAgentSmoothly(NavMeshAgent agent, AgentOverride2d owner, float rotateSpeed)
         {
@@ -34,22 +34,37 @@ namespace NavMeshPlus.Extensions
                 }
             }
         }
+
         protected IEnumerator _RotateCoroutine()
         {
             yield return RotateToWaypoints(agent.transform);
         }
+
         protected IEnumerator RotateToWaypoints(Transform transform)
         {
             Vector2 targetVector = agent.path.corners[1] - transform.position;
             angleDifference = Vector2.SignedAngle(transform.up, targetVector);
             targetAngle = transform.localEulerAngles.z + angleDifference;
 
-            if (targetAngle >= 360) { targetAngle -= 360; }
-            else if (targetAngle < 0) { targetAngle += 360; }
-
-            while (transform.localEulerAngles.z < targetAngle - 0.1f || transform.localEulerAngles.z > targetAngle + 0.1f)
+            if (targetAngle >= 360)
             {
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0, 0, targetAngle), rotateSpeed * Time.deltaTime);
+                targetAngle -= 360;
+            }
+            else if (targetAngle < 0)
+            {
+                targetAngle += 360;
+            }
+
+            while (
+                transform.localEulerAngles.z < targetAngle - 0.1f
+                || transform.localEulerAngles.z > targetAngle + 0.1f
+            )
+            {
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    Quaternion.Euler(0, 0, targetAngle),
+                    rotateSpeed * Time.deltaTime
+                );
                 yield return null;
             }
         }

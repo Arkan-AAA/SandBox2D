@@ -6,14 +6,14 @@ using UnityEngine.AI;
 //***********************************************************************************
 namespace NavMeshPlus.Extensions
 {
-    public class RotateAgentInstantly: IAgentOverride
+    public class RotateAgentInstantly : IAgentOverride
     {
-
         public RotateAgentInstantly(NavMeshAgent agent, AgentOverride2d owner)
         {
             this.agent = agent;
             this.owner = owner;
         }
+
         private NavMeshAgent agent;
         private AgentOverride2d owner;
         private Vector3 nextWaypoint;
@@ -34,7 +34,11 @@ namespace NavMeshPlus.Extensions
         {
             Vector3 targetVector = targetPoint - transform.position;
             float angleDifference = Vector2.SignedAngle(transform.up, targetVector);
-            transform.rotation = Quaternion.Euler(0, 0, transform.localEulerAngles.z + angleDifference);
+            transform.rotation = Quaternion.Euler(
+                0,
+                0,
+                transform.localEulerAngles.z + angleDifference
+            );
         }
     }
 }

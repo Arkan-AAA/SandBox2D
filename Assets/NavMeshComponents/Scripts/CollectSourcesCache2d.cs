@@ -1,5 +1,5 @@
-﻿using NavMeshPlus.Components;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using NavMeshPlus.Components;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -19,7 +19,10 @@ namespace NavMeshPlus.Extensions
         public int SourcesCount => _sources.Count;
         public int CahcheCount => _lookup.Count;
 
-        public List<NavMeshBuildSource> Cache { get => _sources; }
+        public List<NavMeshBuildSource> Cache
+        {
+            get => _sources;
+        }
 
         protected override void Awake()
         {
@@ -30,6 +33,7 @@ namespace NavMeshPlus.Extensions
             _sourcesBounds = new Bounds();
             base.Awake();
         }
+
         protected override void OnDestroy()
         {
             _state?.Dispose();
@@ -61,17 +65,22 @@ namespace NavMeshPlus.Extensions
             IsDirty = true;
             return true;
         }
+
         public bool UpdateSource(GameObject gameObject, int? area = null)
         {
             var res = _lookup.ContainsKey(gameObject);
-            if(res)
+            if (res)
             {
                 IsDirty = true;
                 var source = _lookup[gameObject];
                 var idx = _sources.IndexOf(source);
                 if (idx >= 0)
                 {
-                    source.transform = Matrix4x4.TRS(gameObject.transform.position, gameObject.transform.rotation, gameObject.transform.lossyScale);
+                    source.transform = Matrix4x4.TRS(
+                        gameObject.transform.position,
+                        gameObject.transform.rotation,
+                        gameObject.transform.lossyScale
+                    );
                     if (area.HasValue)
                     {
                         source.area = area.Value;
@@ -99,13 +108,24 @@ namespace NavMeshPlus.Extensions
         public AsyncOperation UpdateNavMesh(NavMeshData data)
         {
             IsDirty = false;
-            return NavMeshBuilder.UpdateNavMeshDataAsync(data, NavMeshSurfaceOwner.GetBuildSettings(), _sources, _sourcesBounds);
+            return NavMeshBuilder.UpdateNavMeshDataAsync(
+                data,
+                NavMeshSurfaceOwner.GetBuildSettings(),
+                _sources,
+                _sourcesBounds
+            );
         }
+
         public AsyncOperation UpdateNavMesh()
         {
             return UpdateNavMesh(NavMeshSurfaceOwner.navMeshData);
         }
-        public override void CollectSources(NavMeshSurface surface, List<NavMeshBuildSource> sources, NavMeshBuilderState navMeshState)
+
+        public override void CollectSources(
+            NavMeshSurface surface,
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilderState navMeshState
+        )
         {
             _lookup.Clear();
             IsDirty = false;
@@ -123,7 +143,11 @@ namespace NavMeshPlus.Extensions
             _lookup.Add(component, source);
         }
 
-        public override void PostCollectSources(NavMeshSurface surface, List<NavMeshBuildSource> sources, NavMeshBuilderState navNeshState)
+        public override void PostCollectSources(
+            NavMeshSurface surface,
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilderState navNeshState
+        )
         {
             _sourcesBounds = navNeshState.worldBounds;
             _sources = sources;

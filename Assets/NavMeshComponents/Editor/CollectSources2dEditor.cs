@@ -1,16 +1,17 @@
-﻿using UnityEngine;
-using UnityEditor;
+﻿using UnityEditor;
+using UnityEngine;
 
 namespace NavMeshPlus.Extensions.Editors
 {
     [CanEditMultipleObjects]
     [CustomEditor(typeof(CollectSources2d))]
-    internal class CollectSources2dEditor: Editor
+    internal class CollectSources2dEditor : Editor
     {
         SerializedProperty m_OverrideByGrid;
         SerializedProperty m_UseMeshPrefab;
         SerializedProperty m_CompressBounds;
         SerializedProperty m_OverrideVector;
+
         void OnEnable()
         {
             m_OverrideByGrid = serializedObject.FindProperty("m_OverrideByGrid");
@@ -22,7 +23,7 @@ namespace NavMeshPlus.Extensions.Editors
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-    
+
             var surf = target as CollectSources2d;
 
             EditorGUILayout.PropertyField(m_OverrideByGrid);
@@ -42,7 +43,14 @@ namespace NavMeshPlus.Extensions.Editors
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button(new GUIContent("Rotate Surface to XY", "Rotates Surface along XY plane to face toward standard 2d camera.")))
+                if (
+                    GUILayout.Button(
+                        new GUIContent(
+                            "Rotate Surface to XY",
+                            "Rotates Surface along XY plane to face toward standard 2d camera."
+                        )
+                    )
+                )
                 {
                     foreach (CollectSources2d item in targets)
                     {
@@ -55,11 +63,21 @@ namespace NavMeshPlus.Extensions.Editors
                 {
                     if (!Mathf.Approximately(navSurface.transform.eulerAngles.x, 270f))
                     {
-                        EditorGUILayout.HelpBox("NavMeshSurface is not rotated respectively to (x-90;y0;z0). Apply rotation unless intended.", MessageType.Warning);
+                        EditorGUILayout.HelpBox(
+                            "NavMeshSurface is not rotated respectively to (x-90;y0;z0). Apply rotation unless intended.",
+                            MessageType.Warning
+                        );
                     }
                 }
 #else
-                if (GUILayout.Button(new GUIContent("Tilt Surface", "If your agent get stuck on vertical movement it may help to solve the issue. This will tilt Surface to -89.98. It may impact baking and navigation.")))
+                if (
+                    GUILayout.Button(
+                        new GUIContent(
+                            "Tilt Surface",
+                            "If your agent get stuck on vertical movement it may help to solve the issue. This will tilt Surface to -89.98. It may impact baking and navigation."
+                        )
+                    )
+                )
                 {
                     foreach (CollectSources2d item in targets)
                     {
@@ -69,14 +87,19 @@ namespace NavMeshPlus.Extensions.Editors
                 GUILayout.EndHorizontal();
                 foreach (CollectSources2d navSurface in targets)
                 {
-                    if (!Mathf.Approximately(navSurface.transform.eulerAngles.x, 270.0198f) && !Mathf.Approximately(navSurface.transform.eulerAngles.x, 270f))
+                    if (
+                        !Mathf.Approximately(navSurface.transform.eulerAngles.x, 270.0198f)
+                        && !Mathf.Approximately(navSurface.transform.eulerAngles.x, 270f)
+                    )
                     {
-                        EditorGUILayout.HelpBox("NavMeshSurface is not rotated respectively to (x-90;y0;z0). Apply rotation unless intended.", MessageType.Warning);
+                        EditorGUILayout.HelpBox(
+                            "NavMeshSurface is not rotated respectively to (x-90;y0;z0). Apply rotation unless intended.",
+                            MessageType.Warning
+                        );
                     }
                 }
 #endif
             }
         }
     }
-
 }

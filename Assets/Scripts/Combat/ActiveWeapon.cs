@@ -1,25 +1,35 @@
-using UnityEngine;
-using Satyr.Utils;
 using Combat;
+using Satyr.Utils;
+using UnityEngine;
 
 public class ActiveWeapon : MonoBehaviour {
-
     public static ActiveWeapon Instance { get; private set; }
 
-    [SerializeField] private Weapon currentWeapon;
+    [SerializeField]
+    private Weapon currentWeapon;
 
     private void Awake() => Instance = this;
 
     public Weapon GetActiveWeapon() => currentWeapon;
 
-    public void Attack() { if (currentWeapon != null) currentWeapon.Attack(); }
-    public void AttackHeld() { if (currentWeapon != null) currentWeapon.AttackHeld(); }
-    public void AttackReleased() { if (currentWeapon != null) currentWeapon.AttackReleased(); }
+    public void Attack() {
+        if (currentWeapon != null)
+            currentWeapon.Attack();
+    }
+
+    public void AttackHeld() {
+        if (currentWeapon != null)
+            currentWeapon.AttackHeld();
+    }
+
+    public void AttackReleased() {
+        if (currentWeapon != null)
+            currentWeapon.AttackReleased();
+    }
 
     private void Update() {
         FollowLookDirection();
     }
-
 
     private void FollowLookDirection() {
         float lookX = LookDirectionHelper.GetLookX();

@@ -1,13 +1,13 @@
 #define NAVMESHCOMPONENTS_SHOW_NAVMESHDATA_REF
 
 using System.Linq;
-using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal;
-using UnityEngine.AI;
-using UnityEngine;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.AI;
-using System.Reflection;
+using UnityEditor.IMGUI.Controls;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.AI;
 
 namespace NavMeshPlus.Components.Editors
 {
@@ -33,17 +33,20 @@ namespace NavMeshPlus.Components.Editors
 #if NAVMESHCOMPONENTS_SHOW_NAVMESHDATA_REF
         SerializedProperty m_NavMeshData;
 #endif
+
         class Styles
         {
             public readonly GUIContent m_LayerMask = new GUIContent("Include Layers");
-			public readonly GUIContent m_MinRegionArea = new GUIContent("Minimum Region Area");
+            public readonly GUIContent m_MinRegionArea = new GUIContent("Minimum Region Area");
             public readonly GUIContent m_ShowInputGeom = new GUIContent("Show Input Geom");
             public readonly GUIContent m_ShowVoxels = new GUIContent("Show Voxels");
             public readonly GUIContent m_ShowRegions = new GUIContent("Show Regions");
             public readonly GUIContent m_ShowRawContours = new GUIContent("Show Raw Contours");
             public readonly GUIContent m_ShowContours = new GUIContent("Show Contours");
             public readonly GUIContent m_ShowPolyMesh = new GUIContent("Show Poly Mesh");
-            public readonly GUIContent m_ShowPolyMeshDetail = new GUIContent("Show Poly Mesh Detail");
+            public readonly GUIContent m_ShowPolyMeshDetail = new GUIContent(
+                "Show Poly Mesh Detail"
+            );
         }
 
         static Styles s_Styles;
@@ -52,13 +55,18 @@ namespace NavMeshPlus.Components.Editors
 
         static Color s_HandleColor = new Color(127f, 214f, 244f, 100f) / 255;
         static Color s_HandleColorSelected = new Color(127f, 214f, 244f, 210f) / 255;
-        static Color s_HandleColorDisabled = new Color(127f * 0.75f, 214f * 0.75f, 244f * 0.75f, 100f) / 255;
+        static Color s_HandleColorDisabled =
+            new Color(127f * 0.75f, 214f * 0.75f, 244f * 0.75f, 100f) / 255;
 
         BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
         bool editingCollider
         {
-            get { return EditMode.editMode == EditMode.SceneViewEditMode.Collider && EditMode.IsOwner(this); }
+            get
+            {
+                return EditMode.editMode == EditMode.SceneViewEditMode.Collider
+                    && EditMode.IsOwner(this);
+            }
         }
 
         void OnEnable()
@@ -114,7 +122,13 @@ namespace NavMeshPlus.Components.Editors
                 // Draw image
                 const float diagramHeight = 80.0f;
                 Rect agentDiagramRect = EditorGUILayout.GetControlRect(false, diagramHeight);
-                NavMeshEditorHelpers.DrawAgentDiagram(agentDiagramRect, bs.agentRadius, bs.agentHeight, bs.agentClimb, bs.agentSlope);
+                NavMeshEditorHelpers.DrawAgentDiagram(
+                    agentDiagramRect,
+                    bs.agentRadius,
+                    bs.agentHeight,
+                    bs.agentClimb,
+                    bs.agentSlope
+                );
             }
 
             EditorGUILayout.PropertyField(m_AgentTypeID);
@@ -125,8 +139,13 @@ namespace NavMeshPlus.Components.Editors
             {
                 EditorGUI.indentLevel++;
 
-                EditMode.DoEditModeInspectorModeButton(EditMode.SceneViewEditMode.Collider, "Edit Volume",
-                    EditorGUIUtility.IconContent("EditCollider"), GetBounds, this);
+                EditMode.DoEditModeInspectorModeButton(
+                    EditMode.SceneViewEditMode.Collider,
+                    "Edit Volume",
+                    EditorGUIUtility.IconContent("EditCollider"),
+                    GetBounds,
+                    this
+                );
                 EditorGUILayout.PropertyField(m_Size);
                 EditorGUILayout.PropertyField(m_Center);
 
@@ -143,7 +162,10 @@ namespace NavMeshPlus.Components.Editors
 
             EditorGUILayout.Space();
 
-            m_OverrideVoxelSize.isExpanded = EditorGUILayout.Foldout(m_OverrideVoxelSize.isExpanded, "Advanced");
+            m_OverrideVoxelSize.isExpanded = EditorGUILayout.Foldout(
+                m_OverrideVoxelSize.isExpanded,
+                "Advanced"
+            );
             if (m_OverrideVoxelSize.isExpanded)
             {
                 EditorGUI.indentLevel++;
@@ -153,7 +175,12 @@ namespace NavMeshPlus.Components.Editors
                 // Override voxel size.
                 EditorGUILayout.PropertyField(m_OverrideVoxelSize);
 
-                using (new EditorGUI.DisabledScope(!m_OverrideVoxelSize.boolValue || m_OverrideVoxelSize.hasMultipleDifferentValues))
+                using (
+                    new EditorGUI.DisabledScope(
+                        !m_OverrideVoxelSize.boolValue
+                            || m_OverrideVoxelSize.hasMultipleDifferentValues
+                    )
+                )
                 {
                     EditorGUI.indentLevel++;
 
@@ -163,11 +190,21 @@ namespace NavMeshPlus.Components.Editors
                     {
                         if (!m_AgentTypeID.hasMultipleDifferentValues)
                         {
-                            float voxelsPerRadius = m_VoxelSize.floatValue > 0.0f ? (bs.agentRadius / m_VoxelSize.floatValue) : 0.0f;
-                            EditorGUILayout.LabelField(" ", voxelsPerRadius.ToString("0.00") + " voxels per agent radius", EditorStyles.miniLabel);
+                            float voxelsPerRadius =
+                                m_VoxelSize.floatValue > 0.0f
+                                    ? (bs.agentRadius / m_VoxelSize.floatValue)
+                                    : 0.0f;
+                            EditorGUILayout.LabelField(
+                                " ",
+                                voxelsPerRadius.ToString("0.00") + " voxels per agent radius",
+                                EditorStyles.miniLabel
+                            );
                         }
                         if (m_OverrideVoxelSize.boolValue)
-                            EditorGUILayout.HelpBox("Voxel size controls how accurately the navigation mesh is generated from the level geometry. A good voxel size is 2-4 voxels per agent radius. Making voxel size smaller will increase build time.", MessageType.None);
+                            EditorGUILayout.HelpBox(
+                                "Voxel size controls how accurately the navigation mesh is generated from the level geometry. A good voxel size is 2-4 voxels per agent radius. Making voxel size smaller will increase build time.",
+                                MessageType.None
+                            );
                     }
                     EditorGUI.indentLevel--;
                 }
@@ -175,22 +212,37 @@ namespace NavMeshPlus.Components.Editors
                 // Override tile size
                 EditorGUILayout.PropertyField(m_OverrideTileSize);
 
-                using (new EditorGUI.DisabledScope(!m_OverrideTileSize.boolValue || m_OverrideTileSize.hasMultipleDifferentValues))
+                using (
+                    new EditorGUI.DisabledScope(
+                        !m_OverrideTileSize.boolValue
+                            || m_OverrideTileSize.hasMultipleDifferentValues
+                    )
+                )
                 {
                     EditorGUI.indentLevel++;
 
                     EditorGUILayout.PropertyField(m_TileSize);
 
-                    if (!m_TileSize.hasMultipleDifferentValues && !m_VoxelSize.hasMultipleDifferentValues)
+                    if (
+                        !m_TileSize.hasMultipleDifferentValues
+                        && !m_VoxelSize.hasMultipleDifferentValues
+                    )
                     {
                         float tileWorldSize = m_TileSize.intValue * m_VoxelSize.floatValue;
-                        EditorGUILayout.LabelField(" ", tileWorldSize.ToString("0.00") + " world units", EditorStyles.miniLabel);
+                        EditorGUILayout.LabelField(
+                            " ",
+                            tileWorldSize.ToString("0.00") + " world units",
+                            EditorStyles.miniLabel
+                        );
                     }
 
                     if (!m_OverrideTileSize.hasMultipleDifferentValues)
                     {
                         if (m_OverrideTileSize.boolValue)
-                            EditorGUILayout.HelpBox("Tile size controls the how local the changes to the world are (rebuild or carve). Small tile size allows more local changes, while potentially generating more data overall.", MessageType.None);
+                            EditorGUILayout.HelpBox(
+                                "Tile size controls the how local the changes to the world are (rebuild or carve). Small tile size allows more local changes, while potentially generating more data overall.",
+                                MessageType.None
+                            );
                     }
                     EditorGUI.indentLevel--;
                 }
@@ -251,7 +303,11 @@ namespace NavMeshPlus.Components.Editors
             var nmdRect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
 
             EditorGUI.BeginProperty(nmdRect, GUIContent.none, m_NavMeshData);
-            var rectLabel = EditorGUI.PrefixLabel(nmdRect, GUIUtility.GetControlID(FocusType.Passive), new GUIContent(m_NavMeshData.displayName));
+            var rectLabel = EditorGUI.PrefixLabel(
+                nmdRect,
+                GUIUtility.GetControlID(FocusType.Passive),
+                new GUIContent(m_NavMeshData.displayName)
+            );
             EditorGUI.EndProperty();
 
             using (new EditorGUI.DisabledScope(true))
@@ -261,7 +317,9 @@ namespace NavMeshPlus.Components.Editors
                 EditorGUI.EndProperty();
             }
 #endif
-            using (new EditorGUI.DisabledScope(Application.isPlaying || m_AgentTypeID.intValue == -1))
+            using (
+                new EditorGUI.DisabledScope(Application.isPlaying || m_AgentTypeID.intValue == -1)
+            )
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(EditorGUIUtility.labelWidth);
@@ -306,7 +364,11 @@ namespace NavMeshPlus.Components.Editors
                     bakeOperations.RemoveAt(i);
                 }
 
-                EditorGUI.ProgressBar(EditorGUILayout.GetControlRect(), p, "Baking: " + (int)(100 * p) + "%");
+                EditorGUI.ProgressBar(
+                    EditorGUILayout.GetControlRect(),
+                    p,
+                    "Baking: " + (int)(100 * p) + "%"
+                );
                 if (p <= 1)
                     Repaint();
 
@@ -318,8 +380,13 @@ namespace NavMeshPlus.Components.Editors
         [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.Active | GizmoType.Pickable)]
         static void RenderGizmoSelected(NavMeshSurface navSurface, GizmoType gizmoType)
         {
-             //navSurface.navMeshDataInstance.FlagAsInSelectionHierarchy();
-            var method = navSurface.navMeshDataInstance.GetType().GetMethod("FlagAsInSelectionHierarchy", BindingFlags.NonPublic | BindingFlags.Instance);
+            //navSurface.navMeshDataInstance.FlagAsInSelectionHierarchy();
+            var method = navSurface
+                .navMeshDataInstance.GetType()
+                .GetMethod(
+                    "FlagAsInSelectionHierarchy",
+                    BindingFlags.NonPublic | BindingFlags.Instance
+                );
             method.Invoke(navSurface.navMeshDataInstance, null);
             RenderBoxGizmo(navSurface, gizmoType, true);
         }
@@ -356,7 +423,11 @@ namespace NavMeshPlus.Components.Editors
             var oldMatrix = Gizmos.matrix;
 
             // Use the unscaled matrix for the NavMeshSurface
-            var localToWorld = Matrix4x4.TRS(navSurface.transform.position, navSurface.transform.rotation, Vector3.one);
+            var localToWorld = Matrix4x4.TRS(
+                navSurface.transform.position,
+                navSurface.transform.rotation,
+                Vector3.one
+            );
             Gizmos.matrix = localToWorld;
 
             if (navSurface.collectObjects == CollectObjects.Volume)
@@ -366,7 +437,12 @@ namespace NavMeshPlus.Components.Editors
 
                 if (selected && navSurface.enabled)
                 {
-                    var colorTrans = new Color(color.r * 0.75f, color.g * 0.75f, color.b * 0.75f, color.a * 0.15f);
+                    var colorTrans = new Color(
+                        color.r * 0.75f,
+                        color.g * 0.75f,
+                        color.b * 0.75f,
+                        color.a * 0.15f
+                    );
                     Gizmos.color = colorTrans;
                     Gizmos.DrawCube(navSurface.center, navSurface.size);
                 }
@@ -394,7 +470,11 @@ namespace NavMeshPlus.Components.Editors
 
             var navSurface = (NavMeshSurface)target;
             var color = navSurface.enabled ? s_HandleColor : s_HandleColorDisabled;
-            var localToWorld = Matrix4x4.TRS(navSurface.transform.position, navSurface.transform.rotation, Vector3.one);
+            var localToWorld = Matrix4x4.TRS(
+                navSurface.transform.position,
+                navSurface.transform.rotation,
+                Vector3.one
+            );
             using (new Handles.DrawingScope(color, localToWorld))
             {
                 m_BoundsHandle.center = navSurface.center;
@@ -418,7 +498,10 @@ namespace NavMeshPlus.Components.Editors
         public static void CreateNavMeshSurface(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = NavMeshComponentsGUIUtility.CreateAndSelectGameObject("NavMesh Surface", parent);
+            var go = NavMeshComponentsGUIUtility.CreateAndSelectGameObject(
+                "NavMesh Surface",
+                parent
+            );
             go.AddComponent<NavMeshSurface>();
             var view = SceneView.lastActiveSceneView;
             if (view != null)

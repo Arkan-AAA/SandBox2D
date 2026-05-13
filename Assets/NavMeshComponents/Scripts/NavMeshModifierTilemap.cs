@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using NavMeshPlus.Extensions;
+using UnityEngine;
 using UnityEngine.Tilemaps;
 
 //***********************************************************************************
@@ -22,27 +22,36 @@ namespace NavMeshPlus.Components
         {
             public TileBase tile;
             public bool overrideArea;
-            [NavMeshArea] public int area;
+
+            [NavMeshArea]
+            public int area;
         }
 
         private class MatchingTileComparator : IEqualityComparer<TileModifier>
         {
-            public static readonly IEqualityComparer<TileModifier> Instance = new MatchingTileComparator();
+            public static readonly IEqualityComparer<TileModifier> Instance =
+                new MatchingTileComparator();
+
             public bool Equals(TileModifier a, TileModifier b) => a.tile == b.tile;
+
             public int GetHashCode(TileModifier tileModifier) => tileModifier.GetHashCode();
         }
 
         // List of agent types the modifier is applied for.
         // Special values: empty == None, m_AffectedAgents[0] =-1 == All.
         [SerializeField]
-        List<int> m_AffectedAgents = new List<int>(new int[] { -1 });    // Default value is All
+        List<int> m_AffectedAgents = new List<int>(new int[] { -1 }); // Default value is All
 
         [SerializeField]
         List<TileModifier> m_TileModifiers = new List<TileModifier>();
 
         private Dictionary<TileBase, TileModifier> m_ModifierMap;
 
-        public Dictionary<TileBase, TileModifier> GetModifierMap() => m_TileModifiers.Where(mod => mod.tile != null).Distinct(MatchingTileComparator.Instance).ToDictionary(mod => mod.tile);
+        public Dictionary<TileBase, TileModifier> GetModifierMap() =>
+            m_TileModifiers
+                .Where(mod => mod.tile != null)
+                .Distinct(MatchingTileComparator.Instance)
+                .ToDictionary(mod => mod.tile);
 
         void OnEnable()
         {
@@ -57,11 +66,16 @@ namespace NavMeshPlus.Components
 #if UNITY_EDITOR
         public bool HasDuplicateTileModifiers()
         {
-            return m_TileModifiers.Count != m_TileModifiers.Distinct(MatchingTileComparator.Instance).Count();
+            return m_TileModifiers.Count
+                != m_TileModifiers.Distinct(MatchingTileComparator.Instance).Count();
         }
 #endif // UNITY_EDITOR
 
-        public virtual bool TryGetTileModifier(Vector3Int coords, Tilemap tilemap, out TileModifier modifier)
+        public virtual bool TryGetTileModifier(
+            Vector3Int coords,
+            Tilemap tilemap,
+            out TileModifier modifier
+        )
         {
             if (tilemap.GetTile(coords) is TileBase tileBase)
             {

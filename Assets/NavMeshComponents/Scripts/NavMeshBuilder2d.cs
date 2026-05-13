@@ -1,6 +1,6 @@
-﻿using NavMeshPlus.Components;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using NavMeshPlus.Components;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace NavMeshPlus.Extensions
 {
-    class NavMeshBuilder2dState: IDisposable
+    class NavMeshBuilder2dState : IDisposable
     {
         public Dictionary<Sprite, Mesh> spriteMeshMap;
         public Dictionary<uint, Mesh> coliderMeshMap;
@@ -25,7 +25,7 @@ namespace NavMeshPlus.Extensions
         public CollectObjects CollectObjects;
         public GameObject parent;
         public bool hideEditorLogs;
-        
+
         protected IEnumerable<GameObject> _root;
         private bool _disposed;
 
@@ -70,33 +70,39 @@ namespace NavMeshPlus.Extensions
             }
             return mesh;
 #else
-            throw new InvalidOperationException("PhysicsColliders supported in Unity 2019.3 and higher.");
+            throw new InvalidOperationException(
+                "PhysicsColliders supported in Unity 2019.3 and higher."
+            );
 #endif
         }
+
         public void SetRoot(IEnumerable<GameObject> root)
         {
             _root = root;
         }
+
         public IEnumerable<GameObject> GetRoot()
         {
             switch (CollectObjects)
             {
-                case CollectObjects.Children: return new[] { parent };
+                case CollectObjects.Children:
+                    return new[] { parent };
                 case CollectObjects.Volume:
                 case CollectObjects.All:
                 default:
+                {
+                    var list = new List<GameObject>();
+                    var roots = new List<GameObject>();
+                    for (int i = 0; i < SceneManager.sceneCount; ++i)
                     {
-                        var list = new List<GameObject>();
-                        var roots = new List<GameObject>();
-                        for (int i = 0; i < SceneManager.sceneCount; ++i)
-                        {
-                            var s = SceneManager.GetSceneAt(i);
-                            if (!s.isLoaded) continue;
-                            s.GetRootGameObjects(list);
-                            roots.AddRange(list);
-                        }
-                        return roots;
+                        var s = SceneManager.GetSceneAt(i);
+                        if (!s.isLoaded)
+                            continue;
+                        s.GetRootGameObjects(list);
+                        roots.AddRange(list);
                     }
+                    return roots;
+                }
             }
         }
 
@@ -114,7 +120,7 @@ namespace NavMeshPlus.Extensions
                 {
 #if UNITY_EDITOR
                     Object.DestroyImmediate(item.Value);
-#else 
+#else
                     Object.Destroy(item.Value);
 #endif
                 }
@@ -147,16 +153,24 @@ namespace NavMeshPlus.Extensions
 
     class NavMeshBuilder2d
     {
-        public static void CollectSources(List<NavMeshBuildSource> sources, NavMeshBuilder2dState builder)
+        public static void CollectSources(
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilder2dState builder
+        )
         {
             foreach (var it in builder.Root)
             {
                 CollectSources(it, sources, builder);
             }
-            if (!builder.hideEditorLogs) Debug.Log("Sources " + sources.Count);
+            if (!builder.hideEditorLogs)
+                Debug.Log("Sources " + sources.Count);
         }
 
-        public static void CollectSources(GameObject root, List<NavMeshBuildSource> sources, NavMeshBuilder2dState builder)
+        public static void CollectSources(
+            GameObject root,
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilder2dState builder
+        )
         {
             foreach (var modifier in root.GetComponentsInChildren<NavMeshModifier>())
             {
@@ -186,7 +200,12 @@ namespace NavMeshPlus.Extensions
             }
         }
 
-        public static void CollectSources(List<NavMeshBuildSource> sources, NavMeshBuilder2dState builder, NavMeshModifier modifier, int area)
+        public static void CollectSources(
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilder2dState builder,
+            NavMeshModifier modifier,
+            int area
+        )
         {
             if (builder.CollectGeometry == NavMeshCollectGeometry.PhysicsColliders)
             {
@@ -211,7 +230,11 @@ namespace NavMeshPlus.Extensions
             }
         }
 
-        private static void AddDefaultWalkableTilemap(List<NavMeshBuildSource> sources, NavMeshBuilder2dState builder, NavMeshModifier modifier)
+        private static void AddDefaultWalkableTilemap(
+            List<NavMeshBuildSource> sources,
+            NavMeshBuilder2dState builder,
+            NavMeshModifier modifier
+        )
         {
             var tilemap = modifier.GetComponent<Tilemap>();
             if (tilemap != null)
@@ -221,14 +244,25 @@ namespace NavMeshPlus.Extensions
                     tilemap.CompressBounds();
                 }
 
-                if (!builder.hideEditorLogs) Debug.Log($"Walkable Bounds [{tilemap.name}]: {tilemap.localBounds}");
-                var box = BoxBoundSource(NavMeshSurface.GetWorldBounds(tilemap.transform.localToWorldMatrix, tilemap.localBounds));
+                if (!builder.hideEditorLogs)
+                    Debug.Log($"Walkable Bounds [{tilemap.name}]: {tilemap.localBounds}");
+                var box = BoxBoundSource(
+                    NavMeshSurface.GetWorldBounds(
+                        tilemap.transform.localToWorldMatrix,
+                        tilemap.localBounds
+                    )
+                );
                 box.area = builder.defaultArea;
                 sources.Add(box);
             }
         }
 
-        public static void CollectSources(List<NavMeshBuildSource> sources, SpriteRenderer spriteRenderer, int area, NavMeshBuilder2dState builder)
+        public static void CollectSources(
+            List<NavMeshBuildSource> sources,
+            SpriteRenderer spriteRenderer,
+            int area,
+            NavMeshBuilder2dState builder
+        )
         {
             if (spriteRenderer == null || spriteRenderer.sprite == null)
             {
@@ -238,22 +272,32 @@ namespace NavMeshPlus.Extensions
             mesh = builder.GetMesh(spriteRenderer.sprite);
             if (mesh == null)
             {
-                if (!builder.hideEditorLogs) Debug.Log($"{spriteRenderer.name} mesh is null");
+                if (!builder.hideEditorLogs)
+                    Debug.Log($"{spriteRenderer.name} mesh is null");
                 return;
             }
             var src = new NavMeshBuildSource();
             src.shape = NavMeshBuildSourceShape.Mesh;
             src.component = spriteRenderer;
             src.area = area;
-            src.transform = Matrix4x4.TRS(Vector3.Scale(spriteRenderer.transform.position, builder.overrideVector), spriteRenderer.transform.rotation, spriteRenderer.transform.lossyScale);
+            src.transform = Matrix4x4.TRS(
+                Vector3.Scale(spriteRenderer.transform.position, builder.overrideVector),
+                spriteRenderer.transform.rotation,
+                spriteRenderer.transform.lossyScale
+            );
             src.sourceObject = mesh;
             sources.Add(src);
 
             builder.lookupCallback?.Invoke(spriteRenderer.gameObject, src);
         }
 
-        public static void CollectSources(List<NavMeshBuildSource> sources, Collider2D collider, int area, NavMeshBuilder2dState builder)
-        { 
+        public static void CollectSources(
+            List<NavMeshBuildSource> sources,
+            Collider2D collider,
+            int area,
+            NavMeshBuilder2dState builder
+        )
+        {
             if (collider.usedByComposite)
             {
                 collider = collider.GetComponent<CompositeCollider2D>();
@@ -263,7 +307,8 @@ namespace NavMeshPlus.Extensions
             mesh = builder.GetMesh(collider);
             if (mesh == null)
             {
-                if (!builder.hideEditorLogs) Debug.Log($"{collider.name} mesh is null");
+                if (!builder.hideEditorLogs)
+                    Debug.Log($"{collider.name} mesh is null");
                 return;
             }
 
@@ -274,7 +319,14 @@ namespace NavMeshPlus.Extensions
             src.sourceObject = mesh;
             if (collider.attachedRigidbody)
             {
-                src.transform = Matrix4x4.TRS(Vector3.Scale(collider.attachedRigidbody.transform.position, builder.overrideVector), collider.attachedRigidbody.transform.rotation, Vector3.one);
+                src.transform = Matrix4x4.TRS(
+                    Vector3.Scale(
+                        collider.attachedRigidbody.transform.position,
+                        builder.overrideVector
+                    ),
+                    collider.attachedRigidbody.transform.rotation,
+                    Vector3.one
+                );
             }
             else
             {
@@ -286,7 +338,12 @@ namespace NavMeshPlus.Extensions
             builder.lookupCallback?.Invoke(collider.gameObject, src);
         }
 
-        public static void CollectTileSources(List<NavMeshBuildSource> sources, Tilemap tilemap, int area, NavMeshBuilder2dState builder)
+        public static void CollectTileSources(
+            List<NavMeshBuildSource> sources,
+            Tilemap tilemap,
+            int area,
+            NavMeshBuilder2dState builder
+        )
         {
             var bound = tilemap.cellBounds;
 
@@ -324,10 +381,17 @@ namespace NavMeshPlus.Extensions
                     }
 
                     CollectTile(tilemap, builder, vec3int, size, sharedMesh, rot, ref src);
-                    if (modifierTilemap && modifierTilemap.TryGetTileModifier(vec3int, tilemap, out NavMeshModifierTilemap.TileModifier tileModifier))
+                    if (
+                        modifierTilemap
+                        && modifierTilemap.TryGetTileModifier(
+                            vec3int,
+                            tilemap,
+                            out NavMeshModifierTilemap.TileModifier tileModifier
+                        )
+                    )
                     {
                         src.area = tileModifier.overrideArea ? tileModifier.area : area;
-                    }    
+                    }
                     sources.Add(src);
 
                     builder.lookupCallback?.Invoke(tilemap.GetInstantiatedObject(vec3int), src);
@@ -335,23 +399,45 @@ namespace NavMeshPlus.Extensions
             }
         }
 
-        private static void CollectTile(Tilemap tilemap, NavMeshBuilder2dState builder, Vector3Int vec3int, Vector3 size, Mesh sharedMesh, Quaternion rot, ref NavMeshBuildSource src)
+        private static void CollectTile(
+            Tilemap tilemap,
+            NavMeshBuilder2dState builder,
+            Vector3Int vec3int,
+            Vector3 size,
+            Mesh sharedMesh,
+            Quaternion rot,
+            ref NavMeshBuildSource src
+        )
         {
-            if (!builder.overrideByGrid && tilemap.GetColliderType(vec3int) == Tile.ColliderType.Sprite)
+            if (
+                !builder.overrideByGrid
+                && tilemap.GetColliderType(vec3int) == Tile.ColliderType.Sprite
+            )
             {
                 var sprite = tilemap.GetSprite(vec3int);
                 if (sprite != null)
                 {
                     Mesh mesh = builder.GetMesh(sprite);
                     src.component = tilemap;
-                    src.transform = GetCellTransformMatrix(tilemap, builder.overrideVector, vec3int);
+                    src.transform = GetCellTransformMatrix(
+                        tilemap,
+                        builder.overrideVector,
+                        vec3int
+                    );
                     src.shape = NavMeshBuildSourceShape.Mesh;
                     src.sourceObject = mesh;
                 }
             }
-            else if (builder.useMeshPrefab != null || (builder.overrideByGrid && builder.useMeshPrefab != null))
+            else if (
+                builder.useMeshPrefab != null
+                || (builder.overrideByGrid && builder.useMeshPrefab != null)
+            )
             {
-                src.transform = Matrix4x4.TRS(Vector3.Scale(tilemap.GetCellCenterWorld(vec3int), builder.overrideVector), rot, size);
+                src.transform = Matrix4x4.TRS(
+                    Vector3.Scale(tilemap.GetCellCenterWorld(vec3int), builder.overrideVector),
+                    rot,
+                    size
+                );
                 src.shape = NavMeshBuildSourceShape.Mesh;
                 src.sourceObject = sharedMesh;
             }
@@ -363,9 +449,20 @@ namespace NavMeshPlus.Extensions
             }
         }
 
-        public static Matrix4x4 GetCellTransformMatrix(Tilemap tilemap, Vector3 scale, Vector3Int vec3int)
+        public static Matrix4x4 GetCellTransformMatrix(
+            Tilemap tilemap,
+            Vector3 scale,
+            Vector3Int vec3int
+        )
         {
-            return Matrix4x4.TRS(Vector3.Scale(tilemap.GetCellCenterWorld(vec3int), scale) - tilemap.layoutGrid.cellGap, tilemap.transform.rotation, tilemap.transform.lossyScale) * tilemap.orientationMatrix * tilemap.GetTransformMatrix(vec3int);
+            return Matrix4x4.TRS(
+                    Vector3.Scale(tilemap.GetCellCenterWorld(vec3int), scale)
+                        - tilemap.layoutGrid.cellGap,
+                    tilemap.transform.rotation,
+                    tilemap.transform.lossyScale
+                )
+                * tilemap.orientationMatrix
+                * tilemap.GetTransformMatrix(vec3int);
         }
 
         internal static void sprite2mesh(Sprite sprite, Mesh mesh)
@@ -385,7 +482,7 @@ namespace NavMeshPlus.Extensions
             mesh.triangles = tri;
         }
 
-        static private NavMeshBuildSource BoxBoundSource(Bounds localBounds)
+        private static NavMeshBuildSource BoxBoundSource(Bounds localBounds)
         {
             var src = new NavMeshBuildSource();
             src.transform = Matrix4x4.Translate(localBounds.center);
