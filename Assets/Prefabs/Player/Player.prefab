@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 722473516603297135}
   - component: {fileID: 213234707059039587}
   - component: {fileID: 2872772794787544323}
+  - component: {fileID: 5003621752648003860}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -114,6 +115,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   movingSpeed: 5
+  _maxHealth: 100
+  _damageCooldown: 1
 --- !u!114 &2872772794787544323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -126,6 +129,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d32bc52b11c1dee9ce6e4477572233, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameInput
+--- !u!114 &5003621752648003860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4537925237600721237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac868bfb88084032a1851d82be79d81f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Other.KnockBack
+  _knockBackForce: 3
+  _knockBackMovingTimerMax: 0.3
 --- !u!1 &4559563307930886263
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,12 +318,12 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -7950320164446702114, guid: 290a96395904ff5b88958747fd8949d3, type: 3}
+  m_Sprite: {fileID: 3857373547221563663, guid: 290a96395904ff5b88958747fd8949d3, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1.25, y: 1.3125}
+  m_Size: {x: 1.1875, y: 1.25}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

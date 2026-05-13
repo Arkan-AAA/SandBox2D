@@ -150,7 +150,7 @@ MonoBehaviour:
   _roamingDistanceMin: 3
   _roamingTimerMax: 2
   _chaseRange: 8
-  _attackRange: 1.5
+  _attackRange: 2
   _attackCooldown: 1.2
   _attackDamage: 10
   _roamAnimSpeed: 1

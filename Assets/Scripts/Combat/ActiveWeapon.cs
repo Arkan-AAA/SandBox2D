@@ -3,7 +3,7 @@ using Satyr.Utils;
 using Combat;
 
 public class ActiveWeapon : MonoBehaviour {
-    
+
     public static ActiveWeapon Instance { get; private set; }
 
     [SerializeField] private Weapon currentWeapon;
@@ -15,15 +15,13 @@ public class ActiveWeapon : MonoBehaviour {
     public void Attack() { if (currentWeapon != null) currentWeapon.Attack(); }
     public void AttackHeld() { if (currentWeapon != null) currentWeapon.AttackHeld(); }
     public void AttackReleased() { if (currentWeapon != null) currentWeapon.AttackReleased(); }
-    
-        private void Update()
-    {
+
+    private void Update() {
         FollowLookDirection();
     }
 
-    
-    private void FollowLookDirection()
-    {
+
+    private void FollowLookDirection() {
         float lookX = LookDirectionHelper.GetLookX();
 
         if (lookX < 0f)

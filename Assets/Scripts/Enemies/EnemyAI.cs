@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEngine.AI;
 using Satyr.Utils;
+using System;
 using Enemies;
 using Other;
+using Random = UnityEngine.Random;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -11,7 +13,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float _roamingDistanceMin = 3f;
     [SerializeField] private float _roamingTimerMax = 2f;
     [SerializeField] private float _chaseRange = 8f;
-    [SerializeField] private float _attackRange = 1.5f;
+    [SerializeField] private float _attackRange = 2f;
     [SerializeField] private float _attackCooldown = 1.2f;
     [SerializeField] private int _attackDamage = 10;
     [SerializeField] private float _roamAnimSpeed = 1f;
@@ -23,6 +25,8 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private bool _isAttackingEnemy;
 #endif
 
+    public event EventHandler OnFlashBlink;
+    
     private NavMeshAgent _navMeshAgent;
     private State state;
     private float roamingTime;
@@ -70,7 +74,7 @@ public class EnemyAI : MonoBehaviour
 
         _enemyEntity = GetComponent<EnemyEntity>();
         _knockBack = GetComponent<KnockBack>();
-        _enemyEntity.OnHit += () => animator.SetTrigger(HIT);
+        _enemyEntity.OnHit += OnHit;
         _enemyEntity.OnDeath += OnDeath;
     }
 
@@ -156,6 +160,17 @@ public class EnemyAI : MonoBehaviour
         bool isChasing = state == State.Chasing;
         animator.SetBool(IS_CHASING, isChasing);
         animator.speed = isChasing ? _chaseAnimSpeed : _roamAnimSpeed;
+    }
+
+    private void OnHit() => animator.SetTrigger(HIT);
+
+    private void OnDestroy()
+    {
+        if (_enemyEntity != null)
+        {
+            _enemyEntity.OnHit -= OnHit;
+            _enemyEntity.OnDeath -= OnDeath;
+        }
     }
 
     private void OnDeath()

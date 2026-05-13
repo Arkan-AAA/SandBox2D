@@ -24,14 +24,6 @@ namespace Enemies
             _knockBack = GetComponent<KnockBack>();
         }
 
-        private void OnTriggerStay2D(Collider2D collision)
-        {
-            if (collision.transform.TryGetComponent(out Player player))
-            {
-                player.TakeDamage(transform, _enemySO.enemyDamageAmount);
-            }
-        }
-
         public void TakeDamage(Transform damageSource, int damage)
         {
             if (CurrentHealth <= 0) return;
