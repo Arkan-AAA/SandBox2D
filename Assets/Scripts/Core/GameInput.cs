@@ -57,4 +57,12 @@ public class GameInput : MonoBehaviour {
     public bool IsGamepadMoving() {
         return Gamepad.current != null && Gamepad.current.leftStick.ReadValue().sqrMagnitude > 0.1f;
     }
+
+    public void DisableInput() {
+        playerInputActions.Player.Disable();
+    }
+
+    public void EnableInput() {
+        playerInputActions.Player.Enable();
+    }
 }

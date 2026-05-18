@@ -3,8 +3,7 @@ using Misc;
 using Satyr.Utils;
 using UnityEngine;
 
-public class PlayerVisual : MonoBehaviour
-{
+public class PlayerVisual : MonoBehaviour {
     private Animator _animator;
     private FlashBlink _flashBlink;
 
@@ -13,28 +12,28 @@ public class PlayerVisual : MonoBehaviour
     private const string IS_DEAD = "IsDead";
     private const string HIT = "Hit";
 
-    private void Awake()
-    {
+    private void Awake() {
         _animator = GetComponent<Animator>();
         _flashBlink = GetComponent<FlashBlink>();
     }
 
     private bool _isDead;
 
-    private void Update()
-    {
-        if (_isDead)
-            return;
-        if (_animator.GetBool(HIT))
-            return;
+    public bool disableLook = false;
+
+    private void Update() {
+        if (_isDead) return;
+        if (_animator.GetBool(HIT)) return;
+
         _animator.SetBool(IS_RUNNING, Player.Instance.IsRunning());
-        AdjustPlayerFacingDirection();
+
+        if (!disableLook)
+            AdjustPlayerFacingDirection();
     }
 
     public void SetDashing(bool isDashing) => _animator.SetBool(IS_DASHING, isDashing);
 
-    public void SetDead()
-    {
+    public void SetDead() {
         _isDead = true;
         StopAllCoroutines();
         _animator.Play("dead", 0, 0f);
@@ -43,8 +42,7 @@ public class PlayerVisual : MonoBehaviour
 
     public void TriggerHit() => StartCoroutine(HitAnimation());
 
-    private IEnumerator HitAnimation()
-    {
+    private IEnumerator HitAnimation() {
         if (_isDead)
             yield break;
         _animator.Play("taking damage", 0, 0f);
@@ -52,8 +50,7 @@ public class PlayerVisual : MonoBehaviour
         _animator.SetBool(HIT, false);
     }
 
-    private void AdjustPlayerFacingDirection()
-    {
+    private void AdjustPlayerFacingDirection() {
         float lookX = LookDirectionHelper.GetLookX();
 
         if (lookX < 0f)
