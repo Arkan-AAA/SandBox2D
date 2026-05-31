@@ -1,60 +1,105 @@
-using System;
 using UnityEngine;
 
-namespace Misc {
-    public class FlashBlink : MonoBehaviour {
-        [SerializeField] private float blinkDuration = 0.2f;
-        [SerializeField] private Color blinkColor = Color.white;
+public class FlashBlink : MonoBehaviour {
+    [Header("Settings")]
+    [SerializeField] private Material _blinkMaterial;
+    [SerializeField] private float _blinkDuration = 0.2f;
 
-        private SpriteRenderer _spriteRenderer;
-        private Material _originalMaterial;
-        private Material _blinkMaterial;
+    private float _blinkTimer;
+    private Material _defaultMaterial;
+    private SpriteRenderer _spriteRenderer;
+    private bool _isBlinking;
 
-        private void Awake() {
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-            if (_spriteRenderer == null) {
-                Debug.LogError($"SpriteRenderer not found on {name}");
-                return;
+    private void Awake() {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        if (_spriteRenderer != null) {
+            _defaultMaterial = _spriteRenderer.material;
+        }
+        else {
+            Debug.LogError($"SpriteRenderer not found on {name}");
+        }
+    }
+
+    private void Start() {
+        SubscribeToDamageable();
+    }
+
+    private void SubscribeToDamageable() {
+        // Ищем EnemyAI на родителе или текущем объекте
+        var enemyAI = GetComponentInParent<EnemyAI>();
+        if (enemyAI == null) enemyAI = GetComponent<EnemyAI>();
+
+        if (enemyAI != null) {
+            enemyAI.OnFlashBlink += OnDamageTaken;
+            Debug.Log($"FlashBlink subscribed to EnemyAI on {enemyAI.name}");
+            return;
+        }
+
+        // Ищем Player на родителе или текущем объекте
+        var player = GetComponentInParent<Player>();
+        if (player == null) player = GetComponent<Player>();
+
+        if (player != null) {
+            player.OnFlashBlink += OnDamageTaken;
+            Debug.Log($"FlashBlink subscribed to Player on {player.name}");
+            return;
+        }
+
+        Debug.LogWarning($"No EnemyAI or Player found for FlashBlink on {name}");
+    }
+
+    private void OnDamageTaken(object sender, System.EventArgs e) {
+        Blink();
+    }
+
+    private void Update() {
+        if (_isBlinking) {
+            _blinkTimer -= Time.deltaTime;
+            if (_blinkTimer <= 0f) {
+                SetDefaultMaterial();
+                _isBlinking = false;
             }
+        }
+    }
 
-            _originalMaterial = _spriteRenderer.material;
+    private void Blink() {
+        if (_spriteRenderer == null) return;
+        if (_blinkMaterial == null) {
+            Debug.LogWarning("Blink material not assigned!");
+            return;
+        }
+        SetBlinkingMaterial();
+    }
+
+    private void SetBlinkingMaterial() {
+        _blinkTimer = _blinkDuration;
+        _spriteRenderer.material = _blinkMaterial;
+        _isBlinking = true;
+    }
+
+    private void SetDefaultMaterial() {
+        if (_spriteRenderer != null)
+            _spriteRenderer.material = _defaultMaterial;
+    }
+
+    public void StopBlinking() {
+        SetDefaultMaterial();
+        _isBlinking = false;
+    }
+
+    private void OnDestroy() {
+        // Отписываемся
+        var enemyAI = GetComponentInParent<EnemyAI>();
+        if (enemyAI == null) enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null) {
+            enemyAI.OnFlashBlink -= OnDamageTaken;
+            return;
         }
 
-        private void Start() {
-            var enemyAI = GetComponentInParent<EnemyAI>();
-            if (enemyAI != null)
-                enemyAI.OnFlashBlink += (s, e) => Blink();
-            else {
-                var player = GetComponentInParent<Player>();
-                if (player != null)
-                    player.OnFlashBlink += (s, e) => Blink();
-                else
-                    Debug.LogWarning($"No EnemyAI or Player found for FlashBlink on {name}");
-            }
-        }
-
-        public void Blink() {
-            if (_spriteRenderer == null) return;
-            StopAllCoroutines();
-            StartCoroutine(DoBlink());
-        }
-
-        private System.Collections.IEnumerator DoBlink() {
-            // Создаём временный материал на основе оригинального
-            if (_blinkMaterial == null) {
-                _blinkMaterial = new Material(_originalMaterial);
-                _blinkMaterial.color = blinkColor;
-            }
-
-            _spriteRenderer.material = _blinkMaterial;
-            yield return new WaitForSeconds(blinkDuration);
-            _spriteRenderer.material = _originalMaterial;
-        }
-
-        public void StopBlinking() {
-            StopAllCoroutines();
-            if (_spriteRenderer != null)
-                _spriteRenderer.material = _originalMaterial;
+        var player = GetComponentInParent<Player>();
+        if (player == null) player = GetComponent<Player>();
+        if (player != null) {
+            player.OnFlashBlink -= OnDamageTaken;
         }
     }
 }

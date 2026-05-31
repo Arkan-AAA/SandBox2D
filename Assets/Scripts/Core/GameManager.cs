@@ -31,6 +31,8 @@ public class GameManager : MonoBehaviour {
     public bool IsPaused => CurrentState == GameState.Paused;
     public bool IsGameOver => CurrentState == GameState.GameOver;
 
+    private bool _isGameOverTriggered = false;
+
     private void Awake() {
         if (Instance != null && Instance != this) {
             Destroy(gameObject);
@@ -49,16 +51,28 @@ public class GameManager : MonoBehaviour {
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
         FindUIElements();
 
+        // Сбрасываем состояние панелей
+        if (gameOverPanel != null) {
+            SetPanel(gameOverPanel, false);
+            gameOverPanel.alpha = 0f;
+        }
+        if (pausePanel != null) {
+            SetPanel(pausePanel, false);
+        }
+        if (hudCanvas != null) {
+            SetPanel(hudCanvas, true);
+        }
+
         if (scene.name == mainMenuSceneName) {
             SetState(GameState.MainMenu);
         }
         else if (scene.name == gameSceneName) {
             SetState(GameState.Playing);
+            _isGameOverTriggered = false; // сброс флага
         }
     }
 
     private void FindUIElements() {
-        // Исправлено: убираем FindObjectsSortMode
         var canvases = FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include);
         foreach (var canvas in canvases) {
             if (canvas.name == "HUDCanvas") hudCanvas = canvas;
@@ -66,7 +80,6 @@ public class GameManager : MonoBehaviour {
             if (canvas.name == "GameOverPanel") gameOverPanel = canvas;
         }
 
-        // Исправлено: FindFirstObjectByType → FindAnyObjectByType
         inventoryPanel = FindAnyObjectByType<GameObject>();
         var inventoryPanelObj = GameObject.Find("InventoryPanel");
         if (inventoryPanelObj != null) inventoryPanel = inventoryPanelObj;
@@ -158,16 +171,35 @@ public class GameManager : MonoBehaviour {
 
     public void PauseGame() => SetState(GameState.Paused);
     public void ResumeGame() => SetState(GameState.Playing);
-    public void GameOver() => SetState(GameState.GameOver);
+
+    public void GameOver() {
+        if (_isGameOverTriggered) return;
+        _isGameOverTriggered = true;
+        Debug.Log("GameOver called!");
+        SetState(GameState.GameOver);
+    }
 
     public void RestartLevel() {
         Time.timeScale = 1f;
+        _isGameOverTriggered = false;
+        _isGameOverTriggered = false;
+
+        // Сбрасываем панели перед загрузкой
+        if (gameOverPanel != null) {
+            SetPanel(gameOverPanel, false);
+            gameOverPanel.alpha = 0f;
+        }
+        if (pausePanel != null) {
+            SetPanel(pausePanel, false);
+        }
+
         SceneManager.LoadScene(gameSceneName);
         SetState(GameState.Playing);
     }
 
     public void LoadMainMenu() {
         Time.timeScale = 1f;
+        _isGameOverTriggered = false;
         SceneManager.LoadScene(mainMenuSceneName);
     }
 

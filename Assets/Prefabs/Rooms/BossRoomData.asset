@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0296392666313b99996debb237477a4, type: 3}
   m_Name: BossRoomData
   m_EditorClassIdentifier: Assembly-CSharp::RoomData
-  roomType: 4
+  roomType: 5
   prefab: {fileID: 1631056230311309331, guid: 9fc8141a50e69caa2b4102eed5004b04, type: 3}
   spawnWeight: 1
   minFloor: 0
-  roomSize: {x: 24, y: 24}
-  roomTileSize: {x: 14, y: 18}
+  roomSize: {x: 38, y: 46}
+  roomTileSize: {x: 36, y: 36}

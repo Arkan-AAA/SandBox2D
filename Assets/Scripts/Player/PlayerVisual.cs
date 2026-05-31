@@ -1,5 +1,5 @@
 using System.Collections;
-using Misc;
+using Other;
 using Satyr.Utils;
 using UnityEngine;
 
@@ -25,6 +25,10 @@ public class PlayerVisual : MonoBehaviour {
         if (_isDead) return;
         if (_animator.GetBool(HIT)) return;
 
+        // Проверяем, активна ли игра
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing) return;
+        if (Player.Instance == null) return;
+
         _animator.SetBool(IS_RUNNING, Player.Instance.IsRunning());
 
         if (!disableLook)
@@ -37,7 +41,7 @@ public class PlayerVisual : MonoBehaviour {
         _isDead = true;
         StopAllCoroutines();
         _animator.Play("dead", 0, 0f);
-        _flashBlink.StopBlinking();
+        if (_flashBlink != null) _flashBlink.StopBlinking();
     }
 
     public void TriggerHit() => StartCoroutine(HitAnimation());
@@ -51,6 +55,9 @@ public class PlayerVisual : MonoBehaviour {
     }
 
     private void AdjustPlayerFacingDirection() {
+        // Дополнительная проверка для MainMenu
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing) return;
+
         float lookX = LookDirectionHelper.GetLookX();
 
         if (lookX < 0f)

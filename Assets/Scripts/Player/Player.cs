@@ -10,7 +10,10 @@ public class Player : MonoBehaviour {
     private float movingSpeed = 5f;
 
     [SerializeField]
-    private int _maxHealth = 40;
+    private int _maxHealth = 60;
+
+    [SerializeField]
+    private int _healthPerHeart = 20;
 
     [SerializeField]
     private float _damageCooldown = 1f;
@@ -30,16 +33,20 @@ public class Player : MonoBehaviour {
     private PlayerVisual playerVisual;
     private KnockBack _knockBack;
 
+
     private int _currentHealth;
     private bool _canTakeDamage;
     private bool _isDashing;
     private bool _canDash = true;
     private bool _isDead;
+    private FlashBlink _flashBlink;
     private Vector2 _dashDirection;
 
     private EventHandler _onAttack;
     public event EventHandler OnFlashBlink;
     public int MaxHealth => _maxHealth;
+    public int CurrentHealth => _currentHealth;
+    public int HealthPerHeart => _healthPerHeart;
     public event Action<int, int> OnHealthChanged;
 
     private Action _onAttackHeld;
@@ -52,6 +59,7 @@ public class Player : MonoBehaviour {
         rb.freezeRotation = true;
         playerVisual = GetComponentInChildren<PlayerVisual>();
         _knockBack = GetComponent<KnockBack>();
+        _flashBlink = GetComponent<FlashBlink>();
         _dashDirection = Vector2.right;
     }
 
@@ -74,8 +82,7 @@ public class Player : MonoBehaviour {
     }
 
     public void TakeDamage(Transform damageSource, int damage) {
-        if (_isDead || !_canTakeDamage)
-            return;
+        if (_isDead || !_canTakeDamage) return;
         _canTakeDamage = false;
         _currentHealth = Mathf.Max(0, _currentHealth -= damage);
         OnHealthChanged?.Invoke(_currentHealth, _maxHealth);
@@ -89,16 +96,24 @@ public class Player : MonoBehaviour {
     public bool IsDead { get; private set; } = false;
 
     private void DetectDeath() {
-        if (_currentHealth == 0) {
+        if (_currentHealth <= 0 && !_isDead) {
             _isDead = true;
+            _currentHealth = 0;
             _canTakeDamage = false;
-            if (ActiveWeapon.Instance != null) {
+
+            if (ActiveWeapon.Instance != null)
                 ActiveWeapon.Instance.gameObject.SetActive(false);
-            }
+
             _knockBack.StopKnockBackMovement();
+            if (_flashBlink != null) _flashBlink.StopBlinking();
             playerVisual.SetDead();
 
-            // Вызываем GameOver через GameManager
+            GetComponent<Collider2D>().enabled = false;
+            GetComponent<Rigidbody2D>().simulated = false;
+
+            this.enabled = false;
+            GameInput.Instance?.DisableInput();
+
             GameManager.Instance?.GameOver();
 
             StartCoroutine(DestroyAfterDeath());

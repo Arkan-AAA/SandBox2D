@@ -252,7 +252,8 @@ public class EnemyAI : MonoBehaviour {
     }
 
     public virtual void DealDamage() {
-        if (Player.Instance == null || Player.Instance.IsDead) return;
+        if (Player.Instance == null) return;
+        if (Player.Instance.IsDead) return;
 
         float dist = Vector3.Distance(transform.position, Player.Instance.transform.position);
         if (dist < _attackRange) {

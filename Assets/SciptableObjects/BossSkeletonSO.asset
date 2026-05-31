@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: BossSkeletonSO
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.EnemySO
   enemyName: Skeleton Knight
-  enemyHealth: 250
+  enemyHealth: 300
   enemyDamageAmount: 20

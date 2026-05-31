@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8052823654165068468}
   - component: {fileID: 5887404907686827053}
   - component: {fileID: 3601077358580860634}
+  - component: {fileID: 5607155910265347408}
   m_Layer: 0
   m_Name: BossSkeletonVIsual
   m_TagString: Untagged
@@ -128,6 +129,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd8404eeded1c59b696128b3bdd887a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimationEvents
+--- !u!114 &5607155910265347408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3442489349972549545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a11ad81fe55a4f3ab16e98ae04f46787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlashBlink
+  _blinkMaterial: {fileID: 2100000, guid: 69ac69bfce8488171b13ce740f0e7578, type: 2}
+  _blinkDuration: 0.2
 --- !u!1 &6477661230284939044
 GameObject:
   m_ObjectHideFlags: 0
@@ -223,9 +238,9 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDamping: 0
+  m_LinearDamping: 4
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -255,7 +270,7 @@ MonoBehaviour:
   _roamingTimerMax: 2
   _chaseRange: 12
   _attackRange: 2
-  _attackCooldown: 1.5
+  _attackCooldown: 1
   _attackDamage: 20
   _roamAnimSpeed: 1
   _chaseAnimSpeed: 1.5
@@ -270,21 +285,21 @@ MonoBehaviour:
     m_Bits: 0
   _isChasingEnemy: 0
   _isAttackingEnemy: 0
-  _phase2HealthThreshold: 50
-  _phase3HealthThreshold: 25
-  _rangedProjectile: {fileID: 0}
+  _phase2HealthThreshold: 250
+  _phase3HealthThreshold: 150
+  _rangedProjectile: {fileID: 2450697285740870787, guid: 6500ac9d9358047f8b5e9f0dd3f64907, type: 3}
   _rangedAttackRange: 8
   _rangedAttackCooldown: 3
   _minionPrefabs:
   - {fileID: 7178349512944705063, guid: 5f42b7599aef6aa53b35c98ac40064d0, type: 3}
   - {fileID: 1814149017079919845, guid: 6ae4d8281065634619cb20f8b63847da, type: 3}
   _minionsToSummon: 5
-  _summonCooldown: 8
+  _summonCooldown: 20
   _slamRadius: 3
-  _slamDamage: 15
-  _slamCooldown: 5
-  _comboCooldown: 6
-  _comboDamage: 15
+  _slamDamage: 30
+  _slamCooldown: 10
+  _comboCooldown: 12
+  _comboDamage: 40
   _phaseTransitionEffect: {fileID: 0}
   _slamEffect: {fileID: 0}
 --- !u!114 &5712188236034543987
@@ -300,6 +315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyEntity
   _enemySO: {fileID: 11400000, guid: 1e14db0f281ff66c7b09cad26f12b178, type: 2}
+  _invincibilityDuration: 1.2
 --- !u!1 &9202725259992934917
 GameObject:
   m_ObjectHideFlags: 0

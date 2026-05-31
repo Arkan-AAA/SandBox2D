@@ -8,15 +8,19 @@ public class RoomTrigger : MonoBehaviour {
     public void Initialize(RoomInstance room, MobSpawner spawner) {
         _room = room;
         _spawner = spawner;
+        Debug.Log($"RoomTrigger initialized for {room?.name}");
     }
 
     void OnTriggerEnter2D(Collider2D other) {
-        if (_triggered) return;
+        Debug.Log($"OnTriggerEnter2D called on {_room?.name}, other: {other.name}");
 
-        if (other.CompareTag("Player")) {
-            _triggered = true;
-            _spawner?.OnPlayerEnteredRoom(_room);
-            // НЕ УДАЛЯЕМ ТРИГГЕР СРАЗУ, чтобы не было задержки
-        }
+        if (_triggered) return;
+        if (!other.CompareTag("Player")) return;
+
+        Debug.Log($"Player entered room: {_room?.name}");
+
+        _triggered = true;
+        _spawner?.OnPlayerEnteredRoom(_room);
+        Destroy(gameObject, 0.1f);
     }
 }

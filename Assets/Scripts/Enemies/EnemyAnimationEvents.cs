@@ -1,4 +1,4 @@
-using Misc;
+using Other;
 using UnityEngine;
 
 public class EnemyAnimationEvents : MonoBehaviour {
@@ -22,6 +22,9 @@ public class EnemyAnimationEvents : MonoBehaviour {
     }
 
     public void DealDamage() {
+        if (Player.Instance == null) return;
+        if (Player.Instance.IsDead) return;
+
         if (_enemyAI != null)
             _enemyAI.DealDamage();
     }

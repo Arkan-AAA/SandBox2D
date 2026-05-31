@@ -161,13 +161,10 @@ public class BossAI : EnemyAI {
         if (_rangedProjectile != null && _player != null) {
             Vector2 direction = (_player.position - transform.position).normalized;
             GameObject projectile = Instantiate(_rangedProjectile, transform.position, Quaternion.identity);
-            if (projectile.TryGetComponent<Rigidbody2D>(out var rbProj)) {
-                rbProj.linearVelocity = direction * 10f;
-            }
 
-            var projectileDamage = projectile.GetComponent<Projectile>();
-            if (projectileDamage != null) {
-                projectileDamage.damage = _attackDamage / 2;
+            var proj = projectile.GetComponent<Projectile>();
+            if (proj != null) {
+                proj.Initialize(direction, _attackDamage / 2);  // Initialize сам ставит velocity + rotation
             }
         }
 
@@ -271,7 +268,9 @@ public class BossAI : EnemyAI {
     }
 
     public override void DealDamage() {
-        if (_player == null) return;
+        if (Player.Instance == null) return;
+        if (Player.Instance.IsDead) return;
+
         float dist = Vector3.Distance(transform.position, _player.position);
         if (dist < _attackRange) {
             Player.Instance?.TakeDamage(transform, _attackDamage);

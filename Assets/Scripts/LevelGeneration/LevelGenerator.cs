@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class LevelGenerator : MonoBehaviour {
     [Header("Настройки уровня")]
-    public int targetRoomCount = 10;
+    public int minRoomCount = 8;
+    public int maxRoomCount = 15;
     public int floorIndex = 0;
     public int seed = 0;
     public bool useRandomSeed = true;
@@ -15,25 +15,30 @@ public class LevelGenerator : MonoBehaviour {
     public RoomData bossRoomData;
     public List<RoomData> combatRooms;
     public List<RoomData> specialRooms;
-
-    [Header("Размер комнат (расстояние между центрами)")]
-    public Vector2 roomSpacing = new Vector2(26f, 26f); // Стандартное расстояние между центрами комнат
+    public List<RoomData> eliteRooms;
+    public List<RoomData> treasureRooms;
+    public List<RoomData> shopRooms;
 
     [Header("Коридоры")]
     public GameObject corridorHorizontalPrefab;
     public GameObject corridorVerticalPrefab;
+    public float corridorWidth = 2f;
 
-    [Header("Заглушки")]
-    public GameObject doorBlockerPrefab;
+    [Header("Продвинутые настройки генерации")]
+    public bool enableBranching = true;
+    public float branchChance = 0.3f;
+    public int maxBranchDepth = 2;
+    public bool enableDeadEnds = true;
+    public float deadEndChance = 0.5f;
+    public int minRoomsBeforeBoss = 5;
 
     private Dictionary<Vector2Int, RoomInstance> _grid = new();
     private List<RoomInstance> _allRooms = new();
-
+    private Dictionary<Vector2Int, int> _roomDepth = new();
+    private int _targetRoomCount;
     private System.Random _rng;
 
-    void Start() {
-        Generate();
-    }
+    void Start() => Generate();
 
     [ContextMenu("Generate")]
     public void Generate() {
@@ -41,102 +46,92 @@ public class LevelGenerator : MonoBehaviour {
 
         int actualSeed = useRandomSeed ? Random.Range(0, int.MaxValue) : seed;
         _rng = new System.Random(actualSeed);
+        _targetRoomCount = _rng.Next(minRoomCount, maxRoomCount + 1);
 
-        Debug.Log($"[Generator] Seed: {actualSeed}");
+        Debug.Log($"[Generator] Seed: {actualSeed}, Target rooms: {_targetRoomCount}");
 
         SpawnRoom(startRoomData, Vector2Int.zero);
+        _roomDepth[Vector2Int.zero] = 0;
 
-        Queue<RoomInstance> frontier = new();
-        frontier.Enqueue(_allRooms[0]);
+        Queue<RoomInstance> mainPath = new();
+        Queue<RoomInstance> branches = new();
+        mainPath.Enqueue(_allRooms[0]);
 
-        int attempts = 0;
-
-        while (_allRooms.Count < targetRoomCount - 1 && frontier.Count > 0 && attempts < 500) {
-            attempts++;
-            RoomInstance current = frontier.Dequeue();
-
-            foreach (DoorPoint door in current.GetFreeDoors().ToList()) {
-                if (_allRooms.Count >= targetRoomCount - 1)
-                    break;
-
-                Vector2Int nextPos = current.gridPosition + DirToGrid(door.direction);
-
-                if (_grid.ContainsKey(nextPos))
-                    continue;
-
-                RoomData candidate = PickRoom(door.direction);
-
-                if (candidate == null) {
-                    Debug.LogWarning($"Нет комнаты для направления {door.direction}");
-                    continue;
-                }
-
-                RoomInstance newRoom = SpawnRoom(candidate, nextPos);
-
-                if (newRoom == null)
-                    continue;
-
-                DoorPoint otherDoor = newRoom.GetDoor(door.Opposite());
-
-                if (otherDoor == null) {
-                    Debug.LogWarning($"У новой комнаты нет двери {door.Opposite()}");
-                    continue;
-                }
-
-                ConnectDoors(door, otherDoor);
-                frontier.Enqueue(newRoom);
-            }
-        }
-
+        GenerateMainPath(mainPath, branches);
+        if (enableBranching) GenerateBranches(branches);
+        FillRemainingRooms();
         SpawnBossRoom();
-        BlockFreeDoors();
 
-        Debug.Log($"[Generator] Сгенерировано {_allRooms.Count} комнат");
+        Debug.Log($"[Generator] Сгенерировано {_allRooms.Count} комнат (цель: {_targetRoomCount})");
+        LogGenerationStats();
     }
 
-    // =========================================================
-    // РАСЧЁТ ПОЗИЦИИ КОМНАТЫ С УЧЁТОМ ЕЁ РАЗМЕРА
-    // =========================================================
-    Vector3 CalculateRoomPosition(RoomData data, Vector2Int gridPos) {
-        Vector2 roomSize = GetRoomSize(data);
-        Vector2 standardSize = new Vector2(24f, 24f); // стандартный размер комнаты в тайлах
+    private Vector3 CalculateBossRoomPosition(RoomInstance targetRoom, DoorPoint targetDoor) {
+        Vector2 targetSize = GetRoomSize(targetRoom.data);
+        Vector2 bossSize = GetRoomSize(bossRoomData);
 
-        // Разница между размером этой комнаты и стандартной
-        Vector2 sizeDifference = (roomSize - standardSize) / 2f;
+        Vector3 direction = targetDoor.direction switch {
+            DoorDirection.Right => Vector3.right,
+            DoorDirection.Left => Vector3.left,
+            DoorDirection.Up => Vector3.up,
+            DoorDirection.Down => Vector3.down,
+            _ => Vector3.zero
+        };
 
-        // Базовая позиция по сетке
-        float baseX = gridPos.x * roomSpacing.x;
-        float baseY = gridPos.y * roomSpacing.y;
-
-        // Корректируем позицию с учётом размера комнаты
-        float offsetX = baseX + (gridPos.x > 0 ? sizeDifference.x : gridPos.x < 0 ? -sizeDifference.x : 0);
-        float offsetY = baseY + (gridPos.y > 0 ? sizeDifference.y : gridPos.y < 0 ? -sizeDifference.y : 0);
-
-        return new Vector3(offsetX, offsetY, 0f);
-    }
-
-    Vector2 GetRoomSize(RoomData data) {
-        if (data != null && data.roomSize != Vector2.zero) {
-            return data.roomSize;
+        float distance = (targetSize.x / 2f) + (bossSize.x / 2f) + corridorWidth;
+        if (targetDoor.direction == DoorDirection.Up || targetDoor.direction == DoorDirection.Down) {
+            distance = (targetSize.y / 2f) + (bossSize.y / 2f) + corridorWidth;
         }
+
+        return targetRoom.transform.position + (direction * distance);
+    }
+
+    private Vector3 CalculateRoomPosition(RoomData data, Vector2Int gridPos, RoomInstance neighbor = null, DoorDirection? direction = null) {
+        Vector2 roomSize = GetRoomSize(data);
+
+        if (neighbor != null && direction.HasValue) {
+            Vector2 neighborSize = GetRoomSize(neighbor.data);
+            Vector3 dirVector = direction.Value switch {
+                DoorDirection.Right => Vector3.right,
+                DoorDirection.Left => Vector3.left,
+                DoorDirection.Up => Vector3.up,
+                DoorDirection.Down => Vector3.down,
+                _ => Vector3.zero
+            };
+
+            float distance = (roomSize.x / 2f) + (neighborSize.x / 2f) + corridorWidth;
+            if (direction.Value == DoorDirection.Up || direction.Value == DoorDirection.Down) {
+                distance = (roomSize.y / 2f) + (neighborSize.y / 2f) + corridorWidth;
+            }
+
+            return neighbor.transform.position + (dirVector * distance);
+        }
+
+        // Fallback для первой комнаты
+        return Vector3.zero;
+    }
+
+    private Vector2 GetRoomSize(RoomData data) {
+        if (data != null && data.roomSize != Vector2.zero) return data.roomSize;
         return new Vector2(24f, 24f);
     }
 
-    // =========================================================
+    private RoomInstance SpawnRoom(RoomData data, Vector2Int gridPos, RoomInstance neighbor = null, DoorPoint door = null) {
+        if (data == null || data.prefab == null) return null;
 
-    RoomInstance SpawnRoom(RoomData data, Vector2Int gridPos) {
-        if (data == null || data.prefab == null)
-            return null;
-
-        Vector3 worldPos = CalculateRoomPosition(data, gridPos);
+        Vector3 worldPos;
+        if (neighbor != null && door != null) {
+            worldPos = CalculateRoomPosition(data, gridPos, neighbor, door.direction);
+        }
+        else {
+            worldPos = CalculateRoomPosition(data, gridPos);
+        }
 
         GameObject go = Instantiate(data.prefab, worldPos, Quaternion.identity, transform);
         go.name = $"Room_{data.roomType}_{gridPos}";
 
         RoomInstance instance = go.GetComponent<RoomInstance>();
-        if (instance == null)
-            instance = go.AddComponent<RoomInstance>();
-
+        if (instance == null) instance = go.AddComponent<RoomInstance>();
         instance.data = data;
         instance.gridPosition = gridPos;
 
@@ -148,117 +143,118 @@ public class LevelGenerator : MonoBehaviour {
         return instance;
     }
 
-    // =========================================================
+    private void GenerateMainPath(Queue<RoomInstance> mainPath, Queue<RoomInstance> branches) {
+        int attempts = 0;
+        int maxAttempts = 500;
 
-    RoomData PickRoom(DoorDirection incomingDirection) {
-        DoorDirection neededDoor = OppositeDir(incomingDirection);
+        while (_allRooms.Count < _targetRoomCount / 2 && mainPath.Count > 0 && attempts < maxAttempts) {
+            attempts++;
+            RoomInstance current = mainPath.Dequeue();
+            int currentDepth = _roomDepth[current.gridPosition];
 
-        bool wantSpecial = _rng.NextDouble() < 0.25 && specialRooms.Count > 0;
+            foreach (DoorPoint door in current.GetFreeDoors().ToList().OrderBy(x => _rng.Next())) {
+                if (_allRooms.Count >= _targetRoomCount / 2) break;
 
-        List<RoomData> source = wantSpecial ? specialRooms : combatRooms;
-        List<RoomData> pool = new();
+                Vector2Int nextPos = current.gridPosition + DirToGrid(door.direction);
+                if (_grid.ContainsKey(nextPos)) continue;
 
-        foreach (RoomData rd in source) {
-            if (rd == null || rd.prefab == null)
-                continue;
+                bool isDeadEnd = enableDeadEnds && (currentDepth >= 3 && _rng.NextDouble() < deadEndChance);
+                RoomData candidate = isDeadEnd ? PickDeadEndRoom(door.direction) : PickRoom(door.direction, false);
+                if (candidate == null) candidate = PickRoom(door.direction, true);
+                if (candidate == null) continue;
 
-            if (rd.minFloor > floorIndex)
-                continue;
+                RoomInstance newRoom = SpawnRoom(candidate, nextPos, current, door);
+                if (newRoom == null) continue;
 
-            DoorPoint[] doors = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
-            bool hasNeededDoor = doors.Any(d => d.direction == neededDoor);
+                DoorPoint otherDoor = newRoom.GetDoor(door.Opposite());
+                if (otherDoor == null) continue;
 
-            if (hasNeededDoor)
-                pool.Add(rd);
+                ConnectDoors(door, otherDoor);
+                _roomDepth[nextPos] = currentDepth + 1;
+
+                if (isDeadEnd) branches.Enqueue(newRoom);
+                else mainPath.Enqueue(newRoom);
+            }
         }
-
-        Debug.Log($"Need: {neededDoor} | Pool: {pool.Count}");
-
-        if (pool.Count == 0)
-            return null;
-
-        return WeightedRandom(pool);
     }
 
-    // =========================================================
+    private void GenerateBranches(Queue<RoomInstance> branches) {
+        int branchAttempts = 0;
+        int maxBranchAttempts = 100;
 
-    RoomData WeightedRandom(List<RoomData> pool) {
-        float total = pool.Sum(r => r.spawnWeight);
-        float roll = (float)(_rng.NextDouble() * total);
+        while (_allRooms.Count < _targetRoomCount - 1 && branches.Count > 0 && branchAttempts < maxBranchAttempts) {
+            branchAttempts++;
+            RoomInstance current = branches.Dequeue();
+            int currentDepth = _roomDepth[current.gridPosition];
+            if (currentDepth >= maxBranchDepth) continue;
 
-        foreach (RoomData room in pool) {
-            roll -= room.spawnWeight;
-            if (roll <= 0f)
-                return room;
+            foreach (DoorPoint door in current.GetFreeDoors().ToList().OrderBy(x => _rng.Next())) {
+                if (_allRooms.Count >= _targetRoomCount - 1) break;
+                if (_rng.NextDouble() > branchChance) continue;
+
+                Vector2Int nextPos = current.gridPosition + DirToGrid(door.direction);
+                if (_grid.ContainsKey(nextPos)) continue;
+
+                RoomData candidate = PickRoom(door.direction, true);
+                if (candidate == null) continue;
+
+                RoomInstance newRoom = SpawnRoom(candidate, nextPos, current, door);
+                if (newRoom == null) continue;
+
+                DoorPoint otherDoor = newRoom.GetDoor(door.Opposite());
+                if (otherDoor == null) continue;
+
+                ConnectDoors(door, otherDoor);
+                _roomDepth[nextPos] = currentDepth + 1;
+                branches.Enqueue(newRoom);
+            }
         }
-
-        return pool[^1];
     }
 
-    // =========================================================
+    private void FillRemainingRooms() {
+        int fillAttempts = 0;
+        int maxFillAttempts = 200;
 
-    void ConnectDoors(DoorPoint a, DoorPoint b) {
-        a.isConnected = true;
-        b.isConnected = true;
+        while (_allRooms.Count < _targetRoomCount - 1 && fillAttempts < maxFillAttempts) {
+            fillAttempts++;
 
-        a.connectedTo = b;
-        b.connectedTo = a;
+            var roomsWithFreeDoors = _allRooms
+                .Where(r => r.GetFreeDoors().Count > 0 && _roomDepth[r.gridPosition] < 5)
+                .OrderBy(r => _rng.Next())
+                .ToList();
 
-        SpawnCorridor(a, b);
-        OpenDoor(a);
-        OpenDoor(b);
+            if (roomsWithFreeDoors.Count == 0) break;
+
+            RoomInstance current = roomsWithFreeDoors.First();
+            DoorPoint door = current.GetFreeDoors().First();
+
+            Vector2Int nextPos = current.gridPosition + DirToGrid(door.direction);
+            if (_grid.ContainsKey(nextPos)) continue;
+
+            RoomData candidate = PickRoom(door.direction, true);
+            if (candidate == null) continue;
+
+            RoomInstance newRoom = SpawnRoom(candidate, nextPos, current, door);
+            if (newRoom == null) continue;
+
+            DoorPoint otherDoor = newRoom.GetDoor(door.Opposite());
+            if (otherDoor == null) continue;
+
+            ConnectDoors(door, otherDoor);
+            _roomDepth[nextPos] = _roomDepth[current.gridPosition] + 1;
+        }
     }
 
-    // =========================================================
-
-    void SpawnCorridor(DoorPoint a, DoorPoint b) {
-        bool horizontal = a.direction == DoorDirection.Left || a.direction == DoorDirection.Right;
-
-        GameObject prefab = horizontal ? corridorHorizontalPrefab : corridorVerticalPrefab;
-
-        if (prefab == null)
+    private void SpawnBossRoom() {
+        if (bossRoomData == null) {
+            Debug.LogWarning("BossRoomData not assigned!");
             return;
-
-        Vector3 midpoint = (a.transform.position + b.transform.position) / 2f;
-        GameObject corridor = Instantiate(prefab, midpoint, Quaternion.identity, transform);
-        corridor.name = $"Corridor_{a.direction}";
-    }
-
-    // =========================================================
-
-    void OpenDoor(DoorPoint door) {
-        Transform roomRoot = door.transform.parent;
-        Transform passageBlockers = roomRoot.Find("PassageBlockers");
-
-        if (passageBlockers == null) {
-            Debug.LogWarning("Нет PassageBlockers в комнате");
-            return;
         }
 
-        string passageName = door.direction switch {
-            DoorDirection.Up => "Passage_Up",
-            DoorDirection.Down => "Passage_Down",
-            DoorDirection.Left => "Passage_Left",
-            DoorDirection.Right => "Passage_Right",
-            _ => ""
-        };
-
-        Transform passage = passageBlockers.Find(passageName);
-        if (passage != null) {
-            passage.gameObject.SetActive(false);
-            Debug.Log($"Открыт проход: {passageName}");
-        }
-    }
-
-    // =========================================================
-
-    void SpawnBossRoom() {
         RoomInstance target = _allRooms
-            .Where(r =>
-                r.data.roomType != RoomType.Start &&
-                r.data.roomType != RoomType.Boss &&
-                r.GetFreeDoors().Count > 0
-            )
+            .Where(r => r.data.roomType != RoomType.Start &&
+                       r.data.roomType != RoomType.Boss &&
+                       r.GetFreeDoors().Count > 0)
             .OrderByDescending(r => r.gridPosition.sqrMagnitude)
             .FirstOrDefault();
 
@@ -271,63 +267,160 @@ public class LevelGenerator : MonoBehaviour {
         if (freeDoor == null) return;
 
         Vector2Int bossPos = target.gridPosition + DirToGrid(freeDoor.direction);
-
         if (_grid.ContainsKey(bossPos)) return;
 
-        RoomInstance bossRoom = SpawnRoom(bossRoomData, bossPos);
+        Vector3 bossPosition = CalculateBossRoomPosition(target, freeDoor);
 
-        if (bossRoom == null) return;
+        GameObject go = Instantiate(bossRoomData.prefab, bossPosition, Quaternion.identity, transform);
+        go.name = $"Room_Boss_{bossPos}";
+
+        RoomInstance bossRoom = go.GetComponent<RoomInstance>();
+        if (bossRoom == null) bossRoom = go.AddComponent<RoomInstance>();
+        bossRoom.data = bossRoomData;
+        bossRoom.gridPosition = bossPos;
+
+        _grid.Add(bossPos, bossRoom);
+        _allRooms.Add(bossRoom);
 
         DoorPoint bossDoor = bossRoom.GetDoor(freeDoor.Opposite());
-        if (bossDoor == null) return;
+        if (bossDoor == null) {
+            Debug.LogError("Boss room missing required door!");
+            DestroyImmediate(go);
+            return;
+        }
 
         ConnectDoors(freeDoor, bossDoor);
+
+        Debug.Log($"Boss room placed at {bossPosition}, distance: {Vector3.Distance(target.transform.position, bossPosition)}");
     }
 
-    // =========================================================
+    private void ConnectDoors(DoorPoint a, DoorPoint b) {
+        a.isConnected = true;
+        b.isConnected = true;
+        a.connectedTo = b;
+        b.connectedTo = a;
 
-    void BlockFreeDoors() {
-        if (doorBlockerPrefab == null)
-            return;
-
-        foreach (RoomInstance room in _allRooms) {
-            foreach (DoorPoint door in room.GetFreeDoors()) {
-                Instantiate(doorBlockerPrefab, door.transform.position, Quaternion.identity, room.transform);
-                door.isConnected = true;
-            }
-        }
+        SpawnCorridor(a, b);
+        OpenDoor(a);
+        OpenDoor(b);
     }
 
-    // =========================================================
+    private void SpawnCorridor(DoorPoint a, DoorPoint b) {
+        bool horizontal = a.direction == DoorDirection.Left || a.direction == DoorDirection.Right;
+        GameObject prefab = horizontal ? corridorHorizontalPrefab : corridorVerticalPrefab;
+        if (prefab == null) return;
 
-    void Clear() {
-        foreach (Transform child in transform) {
-            Destroy(child.gameObject);
+        Vector3 midpoint = (a.transform.position + b.transform.position) / 2f;
+        GameObject corridor = Instantiate(prefab, midpoint, Quaternion.identity, transform);
+        corridor.name = $"Corridor_{a.direction}";
+    }
+
+    private void OpenDoor(DoorPoint door) {
+        Transform roomRoot = door.transform.parent;
+        Transform passageBlockers = roomRoot.Find("PassageBlockers");
+        if (passageBlockers == null) return;
+
+        string passageName = door.direction switch {
+            DoorDirection.Up => "Passage_Up",
+            DoorDirection.Down => "Passage_Down",
+            DoorDirection.Left => "Passage_Left",
+            DoorDirection.Right => "Passage_Right",
+            _ => ""
+        };
+
+        Transform passage = passageBlockers.Find(passageName);
+        if (passage != null) passage.gameObject.SetActive(false);
+    }
+
+    private RoomData PickRoom(DoorDirection incomingDirection, bool allowSpecial = true) {
+        DoorDirection neededDoor = OppositeDir(incomingDirection);
+        float roll = (float)_rng.NextDouble();
+
+        if (eliteRooms != null && eliteRooms.Count > 0 && roll < 0.1f && floorIndex >= 2) {
+            var pool = GetRoomsWithDoor(eliteRooms, neededDoor);
+            if (pool.Count > 0) return WeightedRandom(pool);
         }
+        if (treasureRooms != null && treasureRooms.Count > 0 && roll >= 0.1f && roll < 0.2f) {
+            var pool = GetRoomsWithDoor(treasureRooms, neededDoor);
+            if (pool.Count > 0) return WeightedRandom(pool);
+        }
+        if (shopRooms != null && shopRooms.Count > 0 && roll >= 0.2f && roll < 0.3f && floorIndex >= 1) {
+            var pool = GetRoomsWithDoor(shopRooms, neededDoor);
+            if (pool.Count > 0) return WeightedRandom(pool);
+        }
+        if (allowSpecial && specialRooms != null && specialRooms.Count > 0 && _rng.NextDouble() < 0.25f) {
+            var pool = GetRoomsWithDoor(specialRooms, neededDoor);
+            if (pool.Count > 0) return WeightedRandom(pool);
+        }
+        if (combatRooms != null && combatRooms.Count > 0) {
+            var combatPool = GetRoomsWithDoor(combatRooms, neededDoor);
+            if (combatPool.Count > 0) return WeightedRandom(combatPool);
+        }
+        return null;
+    }
 
+    private RoomData PickDeadEndRoom(DoorDirection incomingDirection) {
+        DoorDirection neededDoor = OppositeDir(incomingDirection);
+        var allRooms = combatRooms.Concat(specialRooms).ToList();
+        var deadEndCandidates = allRooms.Where(rd => {
+            if (rd == null || rd.prefab == null) return false;
+            DoorPoint[] doors = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
+            return doors.Length == 1 && doors[0].direction == neededDoor;
+        }).ToList();
+
+        if (deadEndCandidates.Count > 0) return WeightedRandom(deadEndCandidates);
+        return PickRoom(incomingDirection, true);
+    }
+
+    private List<RoomData> GetRoomsWithDoor(List<RoomData> rooms, DoorDirection neededDoor) {
+        List<RoomData> result = new();
+        foreach (RoomData rd in rooms) {
+            if (rd == null || rd.prefab == null) continue;
+            if (rd.minFloor > floorIndex) continue;
+            DoorPoint[] doors = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
+            if (doors.Any(d => d.direction == neededDoor)) result.Add(rd);
+        }
+        return result;
+    }
+
+    private RoomData WeightedRandom(List<RoomData> pool) {
+        float total = pool.Sum(r => r.spawnWeight);
+        float roll = (float)(_rng.NextDouble() * total);
+        foreach (RoomData room in pool) {
+            roll -= room.spawnWeight;
+            if (roll <= 0f) return room;
+        }
+        return pool[^1];
+    }
+
+    private void LogGenerationStats() {
+        int combatCount = _allRooms.Count(r => r.data.roomType == RoomType.Combat);
+        int specialCount = _allRooms.Count(r => r.data.roomType == RoomType.Special);
+        int bossCount = _allRooms.Count(r => r.data.roomType == RoomType.Boss);
+        int maxDepth = _roomDepth.Values.Max();
+        Debug.Log($"Stats: Combat={combatCount}, Special={specialCount}, Boss={bossCount}, Max Depth={maxDepth}");
+    }
+
+    private void Clear() {
+        foreach (Transform child in transform) Destroy(child.gameObject);
         _grid.Clear();
         _allRooms.Clear();
+        _roomDepth.Clear();
     }
 
-    // =========================================================
+    private static Vector2Int DirToGrid(DoorDirection dir) => dir switch {
+        DoorDirection.Up => Vector2Int.up,
+        DoorDirection.Down => Vector2Int.down,
+        DoorDirection.Left => Vector2Int.left,
+        DoorDirection.Right => Vector2Int.right,
+        _ => Vector2Int.zero
+    };
 
-    static Vector2Int DirToGrid(DoorDirection dir) {
-        return dir switch {
-            DoorDirection.Up => Vector2Int.up,
-            DoorDirection.Down => Vector2Int.down,
-            DoorDirection.Left => Vector2Int.left,
-            DoorDirection.Right => Vector2Int.right,
-            _ => Vector2Int.zero
-        };
-    }
-
-    static DoorDirection OppositeDir(DoorDirection dir) {
-        return dir switch {
-            DoorDirection.Up => DoorDirection.Down,
-            DoorDirection.Down => DoorDirection.Up,
-            DoorDirection.Left => DoorDirection.Right,
-            DoorDirection.Right => DoorDirection.Left,
-            _ => DoorDirection.Up
-        };
-    }
+    private static DoorDirection OppositeDir(DoorDirection dir) => dir switch {
+        DoorDirection.Up => DoorDirection.Down,
+        DoorDirection.Down => DoorDirection.Up,
+        DoorDirection.Left => DoorDirection.Right,
+        DoorDirection.Right => DoorDirection.Left,
+        _ => DoorDirection.Up
+    };
 }

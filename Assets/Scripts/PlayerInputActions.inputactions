@@ -53,7 +53,7 @@
                 },
                 {
                     "name": "NextWeapon",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "e07ad7e2-5be0-4b19-8745-1fa02a907da0",
                     "expectedControlType": "",
                     "processors": "",
@@ -62,7 +62,7 @@
                 },
                 {
                     "name": "PreviousWeapon",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "d6427a33-8c30-4fd9-806d-ab4b943c0bc2",
                     "expectedControlType": "",
                     "processors": "",
@@ -95,6 +95,33 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "ee296df2-f096-4cc9-bab0-c3a90d4ac96c",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Inventory",
+                    "type": "Button",
+                    "id": "82007446-9d91-4175-8118-198f28ba4f38",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Aim",
+                    "type": "Value",
+                    "id": "1dcff694-8262-47b7-84cf-b8f7a105e66d",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -309,8 +336,30 @@
                 },
                 {
                     "name": "",
+                    "id": "8939d039-6e74-4824-b4ae-f1493d5e5f86",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "NextWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "e3292d6b-b36d-4702-b698-cde93d426d45",
                     "path": "<Mouse>/scroll/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "PreviousWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "49e57d54-da1c-4227-98f7-f7e0b5d9fcd8",
+                    "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -335,7 +384,7 @@
                     "path": "<Keyboard>/2",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Slot2",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -346,8 +395,52 @@
                     "path": "<Keyboard>/3",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "Slot3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "120252c8-16f3-48f7-84d1-6ccb3e0d773b",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "eb3a012f-8263-46d2-8679-de1081c47180",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Inventory",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "15606314-69b8-4319-a06a-2cb28805ee3b",
+                    "path": "<Mouse>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Aim",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e7ae5187-d3e5-44d9-ade7-25d04a66da7d",
+                    "path": "<Gamepad>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Aim",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
@@ -370,7 +463,7 @@
                     "name": "Submit",
                     "type": "Button",
                     "id": "f73ff36f-fe49-4566-b42c-334b0daa898a",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -379,7 +472,7 @@
                     "name": "Cancel",
                     "type": "Button",
                     "id": "bc283fb5-9636-4cf2-8436-5002a86a5866",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
