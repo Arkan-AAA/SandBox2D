@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e8430c125b16d3398ca27cebcfde358, type: 3}
+  m_Name: ButtonClick
+  m_EditorClassIdentifier: Assembly-CSharp::Audio.SoundSO
+  clips:
+  - {fileID: 8300000, guid: 4e3b8b86c0cc8b77181860c32856f64c, type: 3}
+  - {fileID: 8300000, guid: 2f3a859f1640ee91da707fbf018dea86, type: 3}
+  - {fileID: 8300000, guid: 4c1a5d4533a617d3f9cccfe7845fc806, type: 3}
+  - {fileID: 8300000, guid: 2afa14c50e9a280bdb32691dd89f08bb, type: 3}
+  - {fileID: 8300000, guid: 0ed6deae4f4158f42bf5c6f23c78c939, type: 3}
+  - {fileID: 8300000, guid: d3a7f921e2eead578aab208343087df4, type: 3}
+  - {fileID: 8300000, guid: 1655076af147974028f5589262ca0aad, type: 3}
+  - {fileID: 8300000, guid: e413f5ef61b794132bf47323e84192de, type: 3}
+  - {fileID: 8300000, guid: 879c5e964e0bc88ddb82e80db14027f6, type: 3}
+  - {fileID: 8300000, guid: 48eab9823e03d259bbb25443433a8ebc, type: 3}
+  - {fileID: 8300000, guid: 34bd2fe365e54a2ca8ba7afd94248d15, type: 3}
+  volume: 0.4
+  volumeVariance: 0.05
+  pitch: 1
+  pitchVariance: 0.05
+  loop: 0
+  spatialBlend: 0
+  minDistance: 1
+  maxDistance: 20

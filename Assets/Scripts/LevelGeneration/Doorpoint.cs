@@ -2,17 +2,12 @@ using UnityEngine;
 
 public enum DoorDirection { Up, Down, Left, Right }
 
-/// <summary>
-/// Размести этот компонент на дочернем объекте комнаты,
-/// чтобы обозначить точку входа/выхода.
-/// </summary>
 public class DoorPoint : MonoBehaviour {
     public DoorDirection direction;
 
     [HideInInspector] public bool isConnected;
     [HideInInspector] public DoorPoint connectedTo;
 
-    /// <summary>Направление, противоположное этой двери.</summary>
     public DoorDirection Opposite() {
         return direction switch {
             DoorDirection.Up => DoorDirection.Down,

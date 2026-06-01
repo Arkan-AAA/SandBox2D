@@ -1,73 +1,81 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class StaffVisual : MonoBehaviour {
     [Header("References")]
-    [SerializeField] private Camera _gameCamera;          // Перетащите камеру
-    [SerializeField] private Transform _tipPoint;        // Точка вылета снарядов
+    [SerializeField] private Camera _gameCamera;
+    [SerializeField] private Transform _tipPoint;
 
     [Header("Settings")]
-    [SerializeField] private float _rotationOffset = 0f; // Для спрайта, смотрящего вправо — 0. Если вверх — 90.
-    [SerializeField] private bool _flipOnAngle = true;   // Зеркалить при повороте >90°?
+    [SerializeField] private float _rotationOffset = 0f;
+    [SerializeField] private bool _flipOnAngle = true;
 
     private Transform _staffTransform;
+    private bool _facingLeft = false;
 
     private void Awake() {
         _staffTransform = transform;
 
-        // Назначаем камеру, если не указали вручную
         if (_gameCamera == null)
             _gameCamera = Camera.main;
 
-        if (_gameCamera == null)
-            Debug.LogError("StaffVisual: нет камеры! Перетащите её в поле _gameCamera или поставьте тег MainCamera.");
-
         if (_tipPoint == null)
-            _tipPoint = transform; // запасной вариант — центр объекта
+            _tipPoint = transform;
     }
 
     private void Update() {
         if (_gameCamera == null) return;
-
-        Vector2 aimPoint = GetAimPoint();
-        RotateTo(aimPoint);
+        RotateTo(GetAimPoint());
     }
 
     private Vector2 GetAimPoint() {
-        // Приоритет: если есть геймпад и правый стик отклонён — используем его
-        Gamepad gamepad = Gamepad.current;
-        if (gamepad != null) {
-            Vector2 rightStick = gamepad.rightStick.ReadValue();
-            if (rightStick.sqrMagnitude > 0.1f) {
-                // Возвращаем точку в 10 единицах от посоха в направлении стика
-                return (Vector2)_staffTransform.position + rightStick.normalized * 10f;
-            }
+        if (GameInput.Instance != null && GameInput.Instance.IsGamepadActive()) {
+            Vector2 stickDir = GameInput.Instance.GetGamepadLookVector().normalized;
+            return (Vector2)_staffTransform.position + stickDir * 10f;
         }
 
-        // Иначе — мышь
-        Vector2 mouseScreen = Mouse.current.position.ReadValue();
+        Vector3 mouseScreen = GameInput.Instance != null
+            ? GameInput.Instance.GetMousePosition()
+            : Input.mousePosition;
+
+        mouseScreen.z = Mathf.Abs(_gameCamera.transform.position.z);
         return _gameCamera.ScreenToWorldPoint(mouseScreen);
     }
 
     private void RotateTo(Vector2 targetWorldPoint) {
         Vector2 direction = (targetWorldPoint - (Vector2)_staffTransform.position).normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        _staffTransform.rotation = Quaternion.Euler(0f, 0f, angle + _rotationOffset);
+        if (direction == Vector2.zero) return;
 
-        if (_flipOnAngle) {
-            // Зеркалим спрайт по Y, если угол больше 90 или меньше -90
-            _staffTransform.localScale = new Vector3(1, Mathf.Abs(angle) > 90f ? -1 : 1, 1);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        if (!_flipOnAngle) {
+            _staffTransform.rotation = Quaternion.Euler(0f, 0f, angle + _rotationOffset);
+            return;
+        }
+
+        _facingLeft = Mathf.Abs(angle) > 90f;
+
+        if (_facingLeft) {
+            // При scaleY = -1 локальная Y-ось перевёрнута.
+            // Чтобы посох следовал за мышью корректно — инвертируем Y при расчёте угла,
+            // тогда вращение компенсирует переворот оси.
+            float correctedAngle = Mathf.Atan2(-direction.y, -direction.x) * Mathf.Rad2Deg;
+            _staffTransform.rotation = Quaternion.Euler(0f, 0f, correctedAngle + _rotationOffset);
+            _staffTransform.localScale = new Vector3(1f, -1f, 1f);
+        }
+        else {
+            _staffTransform.rotation = Quaternion.Euler(0f, 0f, angle + _rotationOffset);
+            _staffTransform.localScale = new Vector3(1f, 1f, 1f);
         }
     }
 
-    // Метод для получения направления выстрела (от TipPoint к цели)
+    /// <summary>Направление выстрела — всегда от tipPoint к мировой позиции мыши.</summary>
     public Vector2 GetShootDirection() {
         if (_gameCamera == null) return Vector2.right;
-
         Vector2 aimPoint = GetAimPoint();
-        return (aimPoint - (Vector2)_tipPoint.position).normalized;
+        Vector2 dir = aimPoint - (Vector2)_tipPoint.position;
+        return dir.sqrMagnitude > 0.001f ? dir.normalized : (Vector2)_staffTransform.right;
     }
 
-    // Точка спавна снаряда
+    /// <summary>Мировая позиция кончика посоха (точка спавна снаряда).</summary>
     public Vector2 GetSpawnPoint() => _tipPoint.position;
 }

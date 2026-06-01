@@ -6,11 +6,14 @@ public class PauseMenuUI : MonoBehaviour {
     public Button resumeButton;
     public Button optionsButton;
     public Button mainMenuButton;
+    public Button quitButton;
 
     private void Start() {
         if (resumeButton != null) resumeButton.onClick.AddListener(Resume);
         if (optionsButton != null) optionsButton.onClick.AddListener(Options);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(MainMenu);
+        if (quitButton != null) quitButton.onClick.AddListener(Quit);
+
     }
 
     private void Resume() {
@@ -18,10 +21,15 @@ public class PauseMenuUI : MonoBehaviour {
     }
 
     private void Options() {
-        UIManager.Instance.ShowOptions();
+        // Вызываем открытие панели настроек через GameManager
+        GameManager.Instance?.ToggleOptions();
     }
 
     private void MainMenu() {
         GameManager.Instance?.LoadMainMenu();
+    }
+
+    private void Quit() {
+        GameManager.Instance?.QuitGame();
     }
 }

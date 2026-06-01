@@ -7,6 +7,9 @@ public class ActiveWeapon : MonoBehaviour {
 
     private Weapon _currentWeapon;
 
+    // Кешируем — есть ли у текущего оружия StaffVisual (управляет своим scale сам)
+    private bool _weaponManagesOwnScale = false;
+
     private void Awake() {
         if (Instance == null) {
             Instance = this;
@@ -20,7 +23,12 @@ public class ActiveWeapon : MonoBehaviour {
 
     public void SetWeapon(Weapon weapon) {
         _currentWeapon = weapon;
-        Debug.Log($"ActiveWeapon set to: {weapon?.name ?? "null"}");
+
+        // Проверяем управляет ли оружие своим scale самостоятельно
+        _weaponManagesOwnScale = weapon != null &&
+            weapon.GetComponentInChildren<StaffVisual>() != null;
+
+        Debug.Log($"ActiveWeapon set to: {weapon?.name ?? "null"} | ManagesOwnScale: {_weaponManagesOwnScale}");
     }
 
     public void Attack() {
@@ -46,8 +54,10 @@ public class ActiveWeapon : MonoBehaviour {
         if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing) return;
         if (Player.Instance == null) return;
 
-        float lookX = LookDirectionHelper.GetLookX();
+        // Если оружие само управляет своим поворотом (StaffVisual) — не трогаем scale
+        if (_weaponManagesOwnScale) return;
 
+        float lookX = LookDirectionHelper.GetLookX();
         if (lookX < 0f) {
             transform.localScale = new Vector3(-1f, 1f, 1f);
         }

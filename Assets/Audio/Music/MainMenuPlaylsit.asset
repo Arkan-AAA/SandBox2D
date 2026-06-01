@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50f6091b311880bd49d0d0f58e8a2de8, type: 3}
+  m_Name: MainMenuPlaylsit
+  m_EditorClassIdentifier: Assembly-CSharp::Audio.PlaylistSO
+  tracks:
+  - {fileID: 8300000, guid: 276ca07d6c77098f0b60fba07993c6a3, type: 3}
+  - {fileID: 8300000, guid: f7c67f990d4a962c789875bdb7d1563b, type: 3}
+  - {fileID: 8300000, guid: fa848355bccde1f0595b20a0c3ba510c, type: 3}
+  loopPlaylist: 1
+  shuffle: 1
+  crossfadeTime: 1
+  volume: 1
+  pitch: 1

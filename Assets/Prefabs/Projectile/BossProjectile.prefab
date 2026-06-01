@@ -192,9 +192,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3be7ff20350f2794c9d10130a9a0617f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  damage: 10
-  speed: 12
-  lifetime: 4
+  damage: 20
+  speed: 18
+  lifetime: 8
   hitEffect: {fileID: 0}
   wallLayer:
     serializedVersion: 2
@@ -205,3 +205,4 @@ MonoBehaviour:
   rotateToDirection: 1
   rotateContinuously: 0
   rotationSpeed: 360
+  owner: 0

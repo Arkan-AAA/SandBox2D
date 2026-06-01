@@ -156,6 +156,7 @@ GameObject:
   - component: {fileID: 5511057334964117612}
   - component: {fileID: 6852687549734055438}
   - component: {fileID: 5712188236034543987}
+  - component: {fileID: 7615821498148762631}
   m_Layer: 0
   m_Name: BossSkeleton
   m_TagString: Untagged
@@ -268,7 +269,7 @@ MonoBehaviour:
   _roamingDistanceMax: 5
   _roamingDistanceMin: 2
   _roamingTimerMax: 2
-  _chaseRange: 12
+  _chaseRange: 20
   _attackRange: 2
   _attackCooldown: 1
   _attackDamage: 20
@@ -285,21 +286,21 @@ MonoBehaviour:
     m_Bits: 0
   _isChasingEnemy: 0
   _isAttackingEnemy: 0
-  _phase2HealthThreshold: 250
-  _phase3HealthThreshold: 150
+  _phase2HealthThreshold: 200
+  _phase3HealthThreshold: 100
   _rangedProjectile: {fileID: 2450697285740870787, guid: 6500ac9d9358047f8b5e9f0dd3f64907, type: 3}
-  _rangedAttackRange: 8
+  _rangedAttackRange: 20
   _rangedAttackCooldown: 3
   _minionPrefabs:
   - {fileID: 7178349512944705063, guid: 5f42b7599aef6aa53b35c98ac40064d0, type: 3}
   - {fileID: 1814149017079919845, guid: 6ae4d8281065634619cb20f8b63847da, type: 3}
   _minionsToSummon: 5
-  _summonCooldown: 20
-  _slamRadius: 3
+  _summonCooldown: 40
+  _slamRadius: 5
   _slamDamage: 30
-  _slamCooldown: 10
+  _slamCooldown: 20
   _comboCooldown: 12
-  _comboDamage: 40
+  _comboDamage: 30
   _phaseTransitionEffect: {fileID: 0}
   _slamEffect: {fileID: 0}
 --- !u!114 &5712188236034543987
@@ -315,7 +316,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyEntity
   _enemySO: {fileID: 11400000, guid: 1e14db0f281ff66c7b09cad26f12b178, type: 2}
-  _invincibilityDuration: 1.2
+  _invincibilityDuration: 1
+--- !u!114 &7615821498148762631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6477661230284939044}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84aa9a0014fb21cb7bb6301da290a36b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSounds
+  _hitSFX: {fileID: 11400000, guid: f3d34cc420cc03b53a9d95b3ba015903, type: 2}
+  _deathSFX: {fileID: 11400000, guid: f18eb82d25f05a94db629c2bd4a79fdb, type: 2}
+  _meleeSFX: {fileID: 0}
+  _rangedSFX: {fileID: 11400000, guid: 78ee1c0ea17d507a9bb431c533a10034, type: 2}
+  _slamSFX: {fileID: 11400000, guid: 6a2e81f8bf7a9b724a71b4c926ef1fc3, type: 2}
+  _summonSFX: {fileID: 11400000, guid: 6fa850b8d5f3fdf42a1d354213d86326, type: 2}
+  _comboSFX: {fileID: 11400000, guid: 66b884ed7d05a5f3dabf0bf2689c0996, type: 2}
+  _roarSFX: {fileID: 11400000, guid: 716d6920aaf3ca8e38057187038f4db7, type: 2}
+  _phase1Music: {fileID: 11400000, guid: 6f26aec5fa13bf8f28d1baf2593a662e, type: 2}
+  _phase2Music: {fileID: 11400000, guid: d7a2dbc2780d7f63cbe5e2c217ae02ab, type: 2}
+  _phase3Music: {fileID: 11400000, guid: 2fd9ee074893145a88bed1bd1580ba05, type: 2}
 --- !u!1 &9202725259992934917
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,12 +1,11 @@
 using UnityEngine;
 
-namespace ScriptableObjects
-{
+namespace ScriptableObjects {
     [CreateAssetMenu()]
-    public class EnemySO : ScriptableObject
-    {
+    public class EnemySO : ScriptableObject {
         public string enemyName;
-        public int enemyHealth;
-        public int enemyDamageAmount;
+        public int enemyHealth = 60;
+        public int enemyDamageAmount = 10;
+        public int scoreValue = 10;
     }
 }

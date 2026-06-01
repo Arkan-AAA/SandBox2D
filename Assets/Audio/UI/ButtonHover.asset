@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e8430c125b16d3398ca27cebcfde358, type: 3}
+  m_Name: ButtonHover
+  m_EditorClassIdentifier: Assembly-CSharp::Audio.SoundSO
+  clips:
+  - {fileID: 8300000, guid: 1758045f37ea92fc4b7369f0f976db1c, type: 3}
+  volume: 0.3
+  volumeVariance: 0.05
+  pitch: 1
+  pitchVariance: 0.05
+  loop: 0
+  spatialBlend: 0
+  minDistance: 1
+  maxDistance: 20

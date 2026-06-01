@@ -15,3 +15,4 @@ MonoBehaviour:
   enemyName: Skeleton Knight
   enemyHealth: 300
   enemyDamageAmount: 20
+  scoreValue: 200

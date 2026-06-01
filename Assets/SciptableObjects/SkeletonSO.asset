@@ -15,3 +15,4 @@ MonoBehaviour:
   enemyName: Skeleton
   enemyHealth: 60
   enemyDamageAmount: 10
+  scoreValue: 10

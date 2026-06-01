@@ -1,5 +1,5 @@
 using UnityEngine;
-using Combat; // если ваш RangedWeapon в этом namespace
+using Combat;
 
 public class Staff : RangedWeapon {
     [Header("Staff Specific")]
@@ -9,7 +9,6 @@ public class Staff : RangedWeapon {
 
     private void Start() {
         damageAmount = _damageAmount;
-
         if (_staffVisual == null)
             _staffVisual = GetComponentInChildren<StaffVisual>();
     }
@@ -18,11 +17,13 @@ public class Staff : RangedWeapon {
         if (projectilePrefab == null) return;
         if (_staffVisual == null) return;
 
-        Vector2 direction = _staffVisual.GetShootDirection();
+        // Направление и точка спавна — всегда от tipPoint к мыши
         Vector2 spawnPoint = _staffVisual.GetSpawnPoint();
+        Vector2 direction = _staffVisual.GetShootDirection();
 
         GameObject projectile = Instantiate(projectilePrefab, spawnPoint, Quaternion.identity);
         Projectile proj = projectile.GetComponent<Projectile>();
+
         if (proj != null) {
             proj.Initialize(direction, _damageAmount);
         }
@@ -31,16 +32,12 @@ public class Staff : RangedWeapon {
             if (rb != null) rb.linearVelocity = direction * projectileSpeed;
         }
 
-        // Эффект выстрела
         if (_muzzleFlash != null) {
             GameObject flash = Instantiate(_muzzleFlash, spawnPoint, Quaternion.identity);
             Destroy(flash, 0.1f);
         }
-
-        // Можно добавить звук
-        // AudioSource.PlayClipAtPoint(shootSound, spawnPoint);
     }
 
-    // Переопределяем направление, чтобы использовать StaffVisual
     protected override Vector2 GetDirection() => _staffVisual?.GetShootDirection() ?? Vector2.right;
+    protected override Vector2 GetSpawnPoint() => _staffVisual != null ? _staffVisual.GetSpawnPoint() : base.GetSpawnPoint();
 }

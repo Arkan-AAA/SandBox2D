@@ -50,7 +50,7 @@ MonoBehaviour:
   projectileSpeed: 10
   shootDelay: 0.2
   damageAmount: 10
-  _damageAmount: 15
+  _damageAmount: 10
   _muzzleFlash: {fileID: 3629589291147143613}
   _staffVisual: {fileID: 0}
 --- !u!1 &3629589291147143613

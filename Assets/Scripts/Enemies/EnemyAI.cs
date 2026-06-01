@@ -6,62 +6,37 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class EnemyAI : MonoBehaviour {
-    [SerializeField]
-    protected State _startingState;  // private → protected
-
-    [SerializeField]
-    protected float _roamingDistanceMax = 7f;
-
-    [SerializeField]
-    protected float _roamingDistanceMin = 3f;
-
-    [SerializeField]
-    protected float _roamingTimerMax = 2f;
-
-    [SerializeField]
-    protected float _chaseRange = 8f;
-
-    [SerializeField]
-    protected float _attackRange = 2f;
-
-    [SerializeField]
-    protected float _attackCooldown = 1.2f;
-
-    [SerializeField]
-    protected int _attackDamage = 10;
-
-    [SerializeField]
-    protected float _roamAnimSpeed = 1f;
-
-    [SerializeField]
-    protected float _chaseAnimSpeed = 1.5f;
-
-    [SerializeField]
-    protected float _moveSpeed = 3.5f;
+    [SerializeField] protected State _startingState;
+    [SerializeField] protected float _roamingDistanceMax = 7f;
+    [SerializeField] protected float _roamingDistanceMin = 3f;
+    [SerializeField] protected float _roamingTimerMax = 2f;
+    [SerializeField] protected float _chaseRange = 8f;
+    [SerializeField] protected float _attackRange = 2f;
+    [SerializeField] protected float _attackCooldown = 1.2f;
+    [SerializeField] protected int _attackDamage = 10;
+    [SerializeField] protected float _roamAnimSpeed = 1f;
+    [SerializeField] protected float _chaseAnimSpeed = 1.5f;
+    [SerializeField] protected float _moveSpeed = 3.5f;
 
     [Header("Obstacle Avoidance")]
-    [SerializeField]
-    protected float _rayDistance = 1.2f;
-
-    [SerializeField]
-    protected float _avoidForce = 2f;
-
-    [SerializeField]
-    protected LayerMask _obstacleLayer;
+    [SerializeField] protected float _rayDistance = 1.2f;
+    [SerializeField] protected float _avoidForce = 2f;
+    [SerializeField] protected LayerMask _obstacleLayer;
 
     [Header("Layers")]
-    [SerializeField]
-    protected LayerMask _enemyLayer;  // новый слой для атак
+    [SerializeField] protected LayerMask _enemyLayer;
 
 #if UNITY_EDITOR
     [Header("Debug")]
-    [SerializeField]
-    private bool _isChasingEnemy;
-    [SerializeField]
-    private bool _isAttackingEnemy;
+    [SerializeField] private bool _isChasingEnemy;
+    [SerializeField] private bool _isAttackingEnemy;
 #endif
 
+    // ── События ─────────────────────────────────────────────────
     public event EventHandler OnFlashBlink;
+    public event Action OnAlert;        // враг заметил игрока
+    public event Action OnAttackSound;  // обычная атака (для EnemySounds)
+    // ─────────────────────────────────────────────────────────────
 
     protected Rigidbody2D _rb;
     protected State state;
@@ -82,29 +57,21 @@ public class EnemyAI : MonoBehaviour {
     protected KnockBack _knockBack;
     protected Transform _player;
 
-    protected enum State {
-        Idle,
-        Roaming,
-        Chasing,
-        Attacking,
-        Death,
-    }
+    private bool _alertFired = false;
+
+    protected enum State { Idle, Roaming, Chasing, Attacking, Death }
 
     protected virtual void Awake() {
         _rb = GetComponent<Rigidbody2D>();
-        if (_rb != null) {
-            _rb.freezeRotation = true;
-        }
+        if (_rb != null) _rb.freezeRotation = true;
 
         state = _startingState;
         roamingTime = Random.Range(0f, _roamingTimerMax);
-
         animator = GetComponentInChildren<Animator>();
     }
 
     protected virtual void Start() {
         startingPosition = transform.position;
-
         _enemyEntity = GetComponent<EnemyEntity>();
         _knockBack = GetComponent<KnockBack>();
         _player = Player.Instance?.transform;
@@ -126,16 +93,11 @@ public class EnemyAI : MonoBehaviour {
         }
 
 #if UNITY_EDITOR
-        if (_isAttackingEnemy) {
-            state = State.Attacking;
-        }
-        else if (_isChasingEnemy) {
-            state = State.Chasing;
-        }
+        if (_isAttackingEnemy) state = State.Attacking;
+        else if (_isChasingEnemy) state = State.Chasing;
 #endif
 
         float distToPlayer = Vector3.Distance(transform.position, _player.position);
-
         bool isMoving = _rb.linearVelocity.magnitude > 0.1f;
         if (animator != null) animator.SetBool(IS_MOVING, isMoving);
 
@@ -143,17 +105,17 @@ public class EnemyAI : MonoBehaviour {
             case State.Idle:
                 if (distToPlayer < _chaseRange) {
                     state = State.Chasing;
+                    FireAlert();
                     break;
                 }
                 roamingTime -= Time.deltaTime;
-                if (roamingTime < 0) {
-                    Roaming();
-                }
+                if (roamingTime < 0) Roaming();
                 break;
 
             case State.Roaming:
                 if (distToPlayer < _chaseRange) {
                     state = State.Chasing;
+                    FireAlert();
                     break;
                 }
                 if (Vector3.Distance(transform.position, roamPosition) < 0.3f) {
@@ -171,11 +133,11 @@ public class EnemyAI : MonoBehaviour {
                 _attackTimer -= Time.deltaTime;
                 if (_attackTimer <= 0f) {
                     if (animator != null) animator.SetTrigger(ATTACK);
+                    OnAttackSound?.Invoke();  // ← звук атаки
                     _attackTimer = _attackCooldown;
                 }
-                if (distToPlayer > _attackRange) {
+                if (distToPlayer > _attackRange)
                     state = State.Chasing;
-                }
                 break;
 
             case State.Death:
@@ -188,6 +150,12 @@ public class EnemyAI : MonoBehaviour {
             animator.SetBool(IS_CHASING, isChasing);
             animator.speed = isChasing ? _chaseAnimSpeed : _roamAnimSpeed;
         }
+    }
+
+    private void FireAlert() {
+        if (_alertFired) return;
+        _alertFired = true;
+        OnAlert?.Invoke();
     }
 
     protected virtual void HandleChasing() {
@@ -208,8 +176,7 @@ public class EnemyAI : MonoBehaviour {
 
         Vector2 direction = (_player.position - transform.position).normalized;
         Vector2 avoidance = GetAvoidanceVector();
-        Vector2 finalVelocity = (direction + avoidance) * _moveSpeed;
-        _rb.linearVelocity = finalVelocity;
+        _rb.linearVelocity = (direction + avoidance) * _moveSpeed;
         ChangeFacingDirection(transform.position, _player.position);
     }
 
@@ -218,14 +185,11 @@ public class EnemyAI : MonoBehaviour {
         Vector2 forward = _rb.linearVelocity.normalized;
         if (forward == Vector2.zero) forward = transform.right;
 
-        Vector2[] directions = { forward, Quaternion.Euler(0, 0, 45) * forward, Quaternion.Euler(0, 0, -45) * forward };
-
-        foreach (Vector2 dir in directions) {
+        Vector2[] dirs = { forward, Quaternion.Euler(0, 0, 45) * forward, Quaternion.Euler(0, 0, -45) * forward };
+        foreach (Vector2 dir in dirs) {
             RaycastHit2D hit = Physics2D.Raycast(transform.position, dir, _rayDistance, _obstacleLayer);
-            if (hit.collider != null) {
-                Vector2 avoidDir = Vector2.Perpendicular(hit.normal).normalized;
-                avoidance += avoidDir * _avoidForce;
-            }
+            if (hit.collider != null)
+                avoidance += Vector2.Perpendicular(hit.normal).normalized * _avoidForce;
         }
         return avoidance;
     }
@@ -252,18 +216,13 @@ public class EnemyAI : MonoBehaviour {
     }
 
     public virtual void DealDamage() {
-        if (Player.Instance == null) return;
-        if (Player.Instance.IsDead) return;
-
+        if (Player.Instance == null || Player.Instance.IsDead) return;
         float dist = Vector3.Distance(transform.position, Player.Instance.transform.position);
-        if (dist < _attackRange) {
+        if (dist < _attackRange)
             Player.Instance.TakeDamage(transform, _attackDamage);
-        }
     }
 
-    public virtual void DestroyEnemy() {
-        Destroy(gameObject);
-    }
+    public virtual void DestroyEnemy() => Destroy(gameObject);
 
     protected virtual void Roaming() {
         roamPosition = GetRoamingPosition();
@@ -284,9 +243,7 @@ public class EnemyAI : MonoBehaviour {
             : Quaternion.Euler(0f, 0f, 0f);
     }
 
-    public virtual void SetTarget(Transform target) {
-        _player = target;
-    }
+    public virtual void SetTarget(Transform target) => _player = target;
 
     protected virtual void OnDrawGizmosSelected() {
         Gizmos.color = Color.red;

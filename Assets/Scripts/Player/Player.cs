@@ -52,6 +52,7 @@ public class Player : MonoBehaviour {
     private Action _onAttackHeld;
     private Action _onAttackReleased;
     private Action _onDash;
+    public event Action OnPlayerDeath;
 
     private void Awake() {
         Instance = this;
@@ -113,6 +114,8 @@ public class Player : MonoBehaviour {
 
             this.enabled = false;
             GameInput.Instance?.DisableInput();
+
+            OnPlayerDeath?.Invoke(); // ← ДОБАВЬТЕ ЭТУ СТРОКУ
 
             GameManager.Instance?.GameOver();
 

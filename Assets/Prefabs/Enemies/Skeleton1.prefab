@@ -248,6 +248,7 @@ GameObject:
   - component: {fileID: 6890770727282321481}
   - component: {fileID: 5862215243818358517}
   - component: {fileID: 3220025632312144252}
+  - component: {fileID: 2858811762103604750}
   m_Layer: 0
   m_Name: Skeleton1
   m_TagString: Untagged
@@ -390,7 +391,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemies.EnemyEntity
   _enemySO: {fileID: 11400000, guid: 8e9bbb3d433aa253c8e7a70cbc4407d6, type: 2}
-  _invincibilityDuration: 1
+  _invincibilityDuration: 0.3
 --- !u!114 &3220025632312144252
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -405,3 +406,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Other.KnockBack
   _knockBackForce: 3
   _knockBackMovingTimerMax: 0.2
+--- !u!114 &2858811762103604750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7178349512944705063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4e0c8bf8ce4d42d5adddd81d04f8ce7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySounds
+  _hitSFX: {fileID: 11400000, guid: c6e027ed89baa114c8ebe709f883edf5, type: 2}
+  _deathSFX: {fileID: 11400000, guid: c63056833c1a77bcbaecec36ab221c2c, type: 2}
+  _attackSFX: {fileID: 11400000, guid: 742d411da66d6c8e4bf6cfbf42d23853, type: 2}
+  _alertSFX: {fileID: 11400000, guid: 431b6971d2dff580cade4e68beca40ce, type: 2}

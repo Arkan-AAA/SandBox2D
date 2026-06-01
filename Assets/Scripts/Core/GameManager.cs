@@ -1,112 +1,200 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
-public enum GameState {
-    None,
-    MainMenu,
-    Playing,
-    Paused,
-    GameOver
-}
+public enum GameState { None, MainMenu, Playing, Paused, GameOver }
 
 public class GameManager : MonoBehaviour {
     public static GameManager Instance { get; private set; }
 
-    [Header("UI Panels (in-game)")]
+    [Header("UI Panels")]
     public CanvasGroup hudCanvas;
     public CanvasGroup pausePanel;
     public CanvasGroup gameOverPanel;
     public GameObject inventoryPanel;
+    public GameObject optionsPanel;
+    public CanvasGroup darkOverlay;
+    public CanvasGroup mainMenuPanel;
+    public float fadeDuration = 0.2f;
 
     [Header("Scene Names")]
     public string mainMenuSceneName = "MainMenu";
-    public string optionsMenuSceneName = "OptionsMenu";
     public string gameSceneName = "Level1";
 
+    [Header("Progress")]
+    public int floorIndex = 0;
+    public int totalScore = 0;
+    public int totalKills = 0;
+
     public event Action<GameState> OnStateChanged;
+    public event Action<int> OnScoreChanged;
+    public event Action<int> OnKillsChanged;
 
     public GameState CurrentState { get; private set; } = GameState.None;
     public bool IsPaused => CurrentState == GameState.Paused;
     public bool IsGameOver => CurrentState == GameState.GameOver;
 
     private bool _isGameOverTriggered = false;
+    private Coroutine _activeOverlayFade;
+    private Dictionary<CanvasGroup, Coroutine> _activePanelFades = new Dictionary<CanvasGroup, Coroutine>();
 
     private void Awake() {
-        if (Instance != null && Instance != this) {
-            Destroy(gameObject);
-            return;
-        }
+        if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    private void OnDestroy() {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
+    private void OnDestroy() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
         FindUIElements();
-
-        // Сбрасываем состояние панелей
-        if (gameOverPanel != null) {
-            SetPanel(gameOverPanel, false);
-            gameOverPanel.alpha = 0f;
-        }
-        if (pausePanel != null) {
-            SetPanel(pausePanel, false);
-        }
-        if (hudCanvas != null) {
-            SetPanel(hudCanvas, true);
+        if (gameOverPanel != null) SetPanelImmediate(gameOverPanel, false);
+        if (pausePanel != null) SetPanelImmediate(pausePanel, false);
+        if (hudCanvas != null) SetPanelImmediate(hudCanvas, scene.name != mainMenuSceneName);
+        if (darkOverlay != null) {
+            darkOverlay.alpha = 0f;
+            darkOverlay.gameObject.SetActive(false);
         }
 
         if (scene.name == mainMenuSceneName) {
             SetState(GameState.MainMenu);
+            if (mainMenuPanel != null) SetPanelImmediate(mainMenuPanel, true);
         }
         else if (scene.name == gameSceneName) {
             SetState(GameState.Playing);
-            _isGameOverTriggered = false; // сброс флага
+            _isGameOverTriggered = false;
+            if (mainMenuPanel != null) SetPanelImmediate(mainMenuPanel, false);
         }
     }
 
     private void FindUIElements() {
         var canvases = FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include);
-        foreach (var canvas in canvases) {
-            if (canvas.name == "HUDCanvas") hudCanvas = canvas;
-            if (canvas.name == "PausePanel") pausePanel = canvas;
-            if (canvas.name == "GameOverPanel") gameOverPanel = canvas;
+        foreach (var c in canvases) {
+            if (c.name == "HUDCanvas") hudCanvas = c;
+            if (c.name == "PausePanel") pausePanel = c;
+            if (c.name == "GameOverPanel") gameOverPanel = c;
+            if (c.name == "MainMenuPanel") mainMenuPanel = c;
         }
-
-        inventoryPanel = FindAnyObjectByType<GameObject>();
-        var inventoryPanelObj = GameObject.Find("InventoryPanel");
-        if (inventoryPanelObj != null) inventoryPanel = inventoryPanelObj;
+        inventoryPanel = FindInactiveObjectByName("InventoryPanel");
+        optionsPanel = FindInactiveObjectByName("OptionsPanel");
+        if (darkOverlay == null)
+            darkOverlay = GameObject.Find("DarkOverlay")?.GetComponent<CanvasGroup>();
+        if (mainMenuPanel == null)
+            mainMenuPanel = GameObject.Find("MainMenuPanel")?.GetComponent<CanvasGroup>();
     }
 
-    private void Start() {
-        if (CurrentState == GameState.None) {
-            SetState(GameState.Playing);
+    private GameObject FindInactiveObjectByName(string name) {
+        var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        foreach (var go in allObjects)
+            if (go.name == name && go.scene.IsValid())
+                return go;
+        return null;
+    }
+
+    // ─── Управление оверлеем (затемнение) ───────────────────────────────
+    private void SetDarkOverlayVisible(bool visible, float duration = -1) {
+        if (darkOverlay == null) return;
+        if (duration < 0) duration = fadeDuration;
+
+        if (_activeOverlayFade != null)
+            StopCoroutine(_activeOverlayFade);
+
+        darkOverlay.gameObject.SetActive(true);
+        _activeOverlayFade = StartCoroutine(FadeOverlay(visible, duration));
+    }
+
+    private IEnumerator FadeOverlay(bool visible, float duration) {
+        float startAlpha = darkOverlay.alpha;
+        float targetAlpha = visible ? 0.7f : 0f;
+        float elapsed = 0f;
+
+        while (elapsed < duration) {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            darkOverlay.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+            yield return null;
         }
+
+        darkOverlay.alpha = targetAlpha;
+        if (!visible) darkOverlay.gameObject.SetActive(false);
+        _activeOverlayFade = null;
+    }
+
+    // ─── Плавное управление панелями ─────────────────────────────────────
+    public void ShowPanel(CanvasGroup panel, float duration = -1) {
+        if (panel == null) return;
+        if (duration < 0) duration = fadeDuration;
+
+        if (_activePanelFades.ContainsKey(panel) && _activePanelFades[panel] != null)
+            StopCoroutine(_activePanelFades[panel]);
+
+        panel.gameObject.SetActive(true);
+        panel.alpha = 0f;
+        panel.interactable = false;
+        panel.blocksRaycasts = false;
+
+        _activePanelFades[panel] = StartCoroutine(FadePanel(panel, 0f, 1f, duration, true));
+    }
+
+    public void HidePanel(CanvasGroup panel, float duration = -1) {
+        if (panel == null) return;
+        if (duration < 0) duration = fadeDuration;
+
+        if (_activePanelFades.ContainsKey(panel) && _activePanelFades[panel] != null)
+            StopCoroutine(_activePanelFades[panel]);
+
+        _activePanelFades[panel] = StartCoroutine(FadePanel(panel, panel.alpha, 0f, duration, false));
+    }
+
+    private IEnumerator FadePanel(CanvasGroup panel, float startAlpha, float targetAlpha, float duration, bool enableOnComplete) {
+        float elapsed = 0f;
+        while (elapsed < duration) {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            panel.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+            yield return null;
+        }
+
+        panel.alpha = targetAlpha;
+        if (enableOnComplete) {
+            panel.interactable = true;
+            panel.blocksRaycasts = true;
+        }
+        else {
+            panel.interactable = false;
+            panel.blocksRaycasts = false;
+            panel.gameObject.SetActive(false);
+        }
+        _activePanelFades.Remove(panel);
+    }
+
+    private void SetPanelImmediate(CanvasGroup panel, bool visible) {
+        if (panel == null) return;
+        panel.alpha = visible ? 1f : 0f;
+        panel.interactable = visible;
+        panel.blocksRaycasts = visible;
+        panel.gameObject.SetActive(visible);
+    }
+
+    // ─── Состояния игры ─────────────────────────────────────────────────
+    private void Start() {
+        if (CurrentState == GameState.None) SetState(GameState.Playing);
     }
 
     private void Update() {
         if (CurrentState != GameState.Playing && CurrentState != GameState.Paused) return;
-
-        if (Keyboard.current?.escapeKey.wasPressedThisFrame == true ||
-            Gamepad.current?.startButton.wasPressedThisFrame == true) {
+        if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.startButton.wasPressedThisFrame == true)
             TogglePause();
-        }
-
-        if (CurrentState == GameState.Playing && Keyboard.current?.tabKey.wasPressedThisFrame == true) {
+        if (CurrentState == GameState.Playing && Keyboard.current?.tabKey.wasPressedThisFrame == true)
             ToggleInventory();
-        }
     }
 
     public void SetState(GameState newState) {
         if (CurrentState == newState) return;
-
         CurrentState = newState;
         ApplyState();
         OnStateChanged?.Invoke(CurrentState);
@@ -116,54 +204,131 @@ public class GameManager : MonoBehaviour {
         switch (CurrentState) {
             case GameState.MainMenu:
                 Time.timeScale = 1f;
-                SetPanel(hudCanvas, false);
-                SetPanel(pausePanel, false);
-                SetPanel(gameOverPanel, false);
+                SetPanelImmediate(hudCanvas, false);
+                HidePanel(pausePanel, 0.15f);
+                HideOptionsPanelIfVisible();
+                SetPanelImmediate(gameOverPanel, false);
                 if (inventoryPanel) inventoryPanel.SetActive(false);
+                SetDarkOverlayVisible(false, 0.15f);
+                if (mainMenuPanel != null && !mainMenuPanel.gameObject.activeSelf)
+                    SetPanelImmediate(mainMenuPanel, true);
                 GameInput.Instance?.DisableInput();
                 break;
+
             case GameState.Playing:
                 Time.timeScale = 1f;
-                SetPanel(hudCanvas, true);
-                SetPanel(pausePanel, false);
-                SetPanel(gameOverPanel, false);
+                SetPanelImmediate(hudCanvas, true);
+                HidePanel(pausePanel, 0.15f);
+                HideOptionsPanelIfVisible();
+                SetPanelImmediate(gameOverPanel, false);
+                if (inventoryPanel) inventoryPanel.SetActive(false);
+                SetDarkOverlayVisible(false, 0.15f);
+                if (mainMenuPanel != null && mainMenuPanel.gameObject.activeSelf)
+                    SetPanelImmediate(mainMenuPanel, false);
                 GameInput.Instance?.EnableInput();
                 break;
+
             case GameState.Paused:
                 Time.timeScale = 0f;
-                SetPanel(hudCanvas, true);
-                SetPanel(pausePanel, true);
-                SetPanel(gameOverPanel, false);
+                SetPanelImmediate(hudCanvas, true);
+                SetDarkOverlayVisible(true, fadeDuration);
+                if (pausePanel != null && pausePanel.alpha < 0.5f)
+                    ShowPanel(pausePanel, fadeDuration);
+                SetPanelImmediate(gameOverPanel, false);
                 if (inventoryPanel) inventoryPanel.SetActive(false);
                 GameInput.Instance?.DisableInput();
                 break;
+
             case GameState.GameOver:
                 Time.timeScale = 0f;
-                SetPanel(hudCanvas, false);
-                SetPanel(pausePanel, false);
-                SetPanel(gameOverPanel, true);
+                SetPanelImmediate(hudCanvas, false);
+                HidePanel(pausePanel, 0.15f);
+                HideOptionsPanelIfVisible();
+                SetPanelImmediate(gameOverPanel, true);
                 if (inventoryPanel) inventoryPanel.SetActive(false);
+                SetDarkOverlayVisible(false, 0.15f);
                 GameInput.Instance?.DisableInput();
                 break;
         }
     }
 
+    private void HideOptionsPanelIfVisible() {
+        if (optionsPanel == null) return;
+        CanvasGroup optCg = optionsPanel.GetComponent<CanvasGroup>();
+        if (optCg != null && optCg.gameObject.activeSelf)
+            HidePanel(optCg, fadeDuration);
+    }
+
+    // ─── Инвентарь ───────────────────────────────────────────────────────
     public void ToggleInventory() {
-        if (CurrentState != GameState.Playing) return;
-        if (inventoryPanel == null) return;
+        if (CurrentState != GameState.Playing || inventoryPanel == null) return;
+        bool active = !inventoryPanel.activeSelf;
+        inventoryPanel.SetActive(active);
+        Time.timeScale = active ? 0f : 1f;
+        if (active) GameInput.Instance?.DisableInput();
+        else GameInput.Instance?.EnableInput();
+    }
 
-        bool isActive = !inventoryPanel.activeSelf;
-        inventoryPanel.SetActive(isActive);
-        Time.timeScale = isActive ? 0f : 1f;
-
-        if (isActive) {
-            GameInput.Instance?.DisableInput();
+    // ─── Панель настроек (универсально) ───────────────────────────────────
+    public void ToggleOptions() {
+        Debug.Log("ToggleOptions called");
+        if (optionsPanel == null) {
+            Debug.LogError("optionsPanel is NULL! Check assignment.");
+            return;
         }
-        else {
-            GameInput.Instance?.EnableInput();
+        Debug.Log("optionsPanel found: " + optionsPanel.name);
+        CanvasGroup optCg = optionsPanel.GetComponent<CanvasGroup>();
+        if (optCg == null) {
+            Debug.LogError("CanvasGroup missing on OptionsPanel");
+            return;
+        }
+        Debug.Log("CanvasGroup OK, alpha=" + optCg.alpha + ", activeSelf=" + optCg.gameObject.activeSelf);
+
+        bool isOptionsVisible = optCg.alpha > 0.5f && optCg.gameObject.activeSelf;
+
+        if (isOptionsVisible)
+            StartCoroutine(CloseOptionsAndRestore(optCg));
+        else
+            StartCoroutine(OpenOptionsAndHidePrevious(optCg));
+    }
+
+    private IEnumerator OpenOptionsAndHidePrevious(CanvasGroup optCg) {
+        if (CurrentState == GameState.Paused) {
+            if (pausePanel != null && pausePanel.alpha > 0.5f)
+                HidePanel(pausePanel, fadeDuration);
+        }
+        else if (CurrentState == GameState.MainMenu) {
+            if (mainMenuPanel != null && mainMenuPanel.alpha > 0.5f) {
+                SetDarkOverlayVisible(true, fadeDuration);
+                HidePanel(mainMenuPanel, fadeDuration);
+            }
+        }
+        else if (CurrentState == GameState.Playing) {
+            SetState(GameState.Paused);
+            yield return new WaitForSecondsRealtime(0.05f);
+            if (pausePanel != null && pausePanel.alpha > 0.5f)
+                HidePanel(pausePanel, fadeDuration);
+        }
+        ShowPanel(optCg, fadeDuration);
+    }
+
+    private IEnumerator CloseOptionsAndRestore(CanvasGroup optCg) {
+        HidePanel(optCg, fadeDuration);
+        yield return new WaitForSecondsRealtime(0.1f);
+
+        if (CurrentState == GameState.Paused) {
+            if (pausePanel != null && pausePanel.alpha < 0.5f)
+                ShowPanel(pausePanel, fadeDuration);
+        }
+        else if (CurrentState == GameState.MainMenu) {
+            if (mainMenuPanel != null && mainMenuPanel.alpha < 0.5f) {
+                ShowPanel(mainMenuPanel, fadeDuration);
+                SetDarkOverlayVisible(false, fadeDuration);
+            }
         }
     }
 
+    // ─── Пауза ────────────────────────────────────────────────────────────
     public void TogglePause() {
         if (IsGameOver) return;
         SetState(IsPaused ? GameState.Playing : GameState.Paused);
@@ -182,19 +347,9 @@ public class GameManager : MonoBehaviour {
     public void RestartLevel() {
         Time.timeScale = 1f;
         _isGameOverTriggered = false;
-        _isGameOverTriggered = false;
-
-        // Сбрасываем панели перед загрузкой
-        if (gameOverPanel != null) {
-            SetPanel(gameOverPanel, false);
-            gameOverPanel.alpha = 0f;
-        }
-        if (pausePanel != null) {
-            SetPanel(pausePanel, false);
-        }
-
+        SetPanelImmediate(gameOverPanel, false);
+        SetPanelImmediate(pausePanel, false);
         SceneManager.LoadScene(gameSceneName);
-        SetState(GameState.Playing);
     }
 
     public void LoadMainMenu() {
@@ -203,16 +358,30 @@ public class GameManager : MonoBehaviour {
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
-    public void LoadOptionsMenu() {
-        SceneManager.LoadScene(optionsMenuSceneName);
+    public void LoadGameScene() {
+        Time.timeScale = 1f;
+        _isGameOverTriggered = false;
+        SceneManager.LoadScene(gameSceneName);
     }
 
     public void QuitGame() => Application.Quit();
 
-    private static void SetPanel(CanvasGroup panel, bool visible) {
-        if (panel == null) return;
-        panel.alpha = visible ? 1f : 0f;
-        panel.interactable = visible;
-        panel.blocksRaycasts = visible;
+    public void AddScore(int amount) {
+        totalScore += amount;
+        OnScoreChanged?.Invoke(totalScore);
+    }
+
+    public void AddKill() {
+        totalKills++;
+        OnKillsChanged?.Invoke(totalKills);
+    }
+
+    private void OnApplicationQuit() {
+        var progress = new PlayerProgress {
+            maxFloor = floorIndex,
+            totalScore = totalScore,
+            totalKills = totalKills
+        };
+        SaveSystem.SaveGame(progress);
     }
 }

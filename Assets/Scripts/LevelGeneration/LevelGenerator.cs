@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Audio;
 
 public class LevelGenerator : MonoBehaviour {
+    public static LevelGenerator Instance { get; private set; }
+
     [Header("Настройки уровня")]
     public int minRoomCount = 8;
     public int maxRoomCount = 15;
@@ -13,6 +16,7 @@ public class LevelGenerator : MonoBehaviour {
     [Header("Комнаты")]
     public RoomData startRoomData;
     public RoomData bossRoomData;
+    public RoomData exitRoomData;                     // ← комната выхода (назначается в инспекторе)
     public List<RoomData> combatRooms;
     public List<RoomData> specialRooms;
     public List<RoomData> eliteRooms;
@@ -32,11 +36,19 @@ public class LevelGenerator : MonoBehaviour {
     public float deadEndChance = 0.5f;
     public int minRoomsBeforeBoss = 5;
 
+    [Header("Music")]
+    [SerializeField] private PlaylistSO _levelPlaylist;
+
     private Dictionary<Vector2Int, RoomInstance> _grid = new();
     private List<RoomInstance> _allRooms = new();
     private Dictionary<Vector2Int, int> _roomDepth = new();
     private int _targetRoomCount;
     private System.Random _rng;
+
+    private void Awake() {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     void Start() => Generate();
 
@@ -64,6 +76,9 @@ public class LevelGenerator : MonoBehaviour {
 
         Debug.Log($"[Generator] Сгенерировано {_allRooms.Count} комнат (цель: {_targetRoomCount})");
         LogGenerationStats();
+
+        if (AudioManager.Instance != null && _levelPlaylist != null)
+            AudioManager.Instance.StartPlaylist(_levelPlaylist);
     }
 
     private Vector3 CalculateBossRoomPosition(RoomInstance targetRoom, DoorPoint targetDoor) {
@@ -107,7 +122,6 @@ public class LevelGenerator : MonoBehaviour {
             return neighbor.transform.position + (dirVector * distance);
         }
 
-        // Fallback для первой комнаты
         return Vector3.zero;
     }
 
@@ -294,6 +308,47 @@ public class LevelGenerator : MonoBehaviour {
         Debug.Log($"Boss room placed at {bossPosition}, distance: {Vector3.Distance(target.transform.position, bossPosition)}");
     }
 
+    public void SpawnExitRoom() {
+        if (exitRoomData == null) {
+            Debug.LogWarning("ExitRoomData not assigned in LevelGenerator!");
+            return;
+        }
+
+        // Находим комнату босса
+        var bossRoom = _allRooms.FirstOrDefault(r => r.data.roomType == RoomType.Boss);
+        if (bossRoom == null) {
+            Debug.LogWarning("Boss room not found, cannot spawn exit.");
+            return;
+        }
+
+        // Ищем свободную дверь в комнате босса (не соединённую)
+        var freeDoor = bossRoom.GetFreeDoors().FirstOrDefault();
+        if (freeDoor == null) {
+            Debug.LogWarning("Boss room has no free door for exit.");
+            return;
+        }
+
+        Vector2Int exitPos = bossRoom.gridPosition + DirToGrid(freeDoor.direction);
+        if (_grid.ContainsKey(exitPos)) {
+            Debug.LogWarning("Exit position already occupied.");
+            return;
+        }
+
+        // ВАЖНО: передаём соседнюю комнату и дверь, чтобы позиция рассчиталась правильно
+        RoomInstance exitRoom = SpawnRoom(exitRoomData, exitPos, bossRoom, freeDoor);
+        if (exitRoom == null) return;
+
+        DoorPoint exitDoor = exitRoom.GetDoor(freeDoor.Opposite());
+        if (exitDoor == null) {
+            Debug.LogError("Exit room missing required door!");
+            DestroyImmediate(exitRoom.gameObject);
+            return;
+        }
+
+        ConnectDoors(freeDoor, exitDoor);
+        Debug.Log("Exit room spawned after boss defeat.");
+    }
+
     private void ConnectDoors(DoorPoint a, DoorPoint b) {
         a.isConnected = true;
         b.isConnected = true;
@@ -423,4 +478,19 @@ public class LevelGenerator : MonoBehaviour {
         DoorDirection.Right => DoorDirection.Left,
         _ => DoorDirection.Up
     };
+
+    public void NextFloor() {
+        floorIndex++;
+        Debug.Log($"Переход на этаж {floorIndex}");
+
+        Clear();
+        Generate();
+        TeleportPlayerToStart();
+    }
+
+    private void TeleportPlayerToStart() {
+        var startRoom = _allRooms.FirstOrDefault(r => r.data.roomType == RoomType.Start);
+        if (startRoom != null && Player.Instance != null)
+            Player.Instance.transform.position = startRoom.transform.position;
+    }
 }

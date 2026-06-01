@@ -16,22 +16,36 @@ public class Projectile : MonoBehaviour {
     public bool rotateContinuously = false;
     public float rotationSpeed = 360f;
 
+    // Кто выпустил снаряд — чтобы не бить своих
+    public enum ProjectileOwner { Player, Enemy }
+    [HideInInspector] public ProjectileOwner owner = ProjectileOwner.Player;
+
     private Rigidbody2D _rb;
     private Vector2 _direction;
     private bool _isInitialized = false;
 
+    /// <summary>Вызывается игроком (посох и т.д.)</summary>
     public void Initialize(Vector2 direction, int damageAmount) {
+        owner = ProjectileOwner.Player;
+        InitInternal(direction, damageAmount);
+    }
+
+    /// <summary>Вызывается врагом/боссом</summary>
+    public void InitializeEnemy(Vector2 direction, int damageAmount) {
+        owner = ProjectileOwner.Enemy;
+        InitInternal(direction, damageAmount);
+    }
+
+    private void InitInternal(Vector2 direction, int damageAmount) {
         damage = damageAmount;
         _direction = direction.normalized;
         _rb = GetComponent<Rigidbody2D>();
 
-        if (rotateToDirection) {
+        if (rotateToDirection)
             RotateToDirection(_direction);
-        }
 
-        if (_rb != null) {
+        if (_rb != null)
             _rb.linearVelocity = _direction * speed;
-        }
 
         _isInitialized = true;
         Destroy(gameObject, lifetime);
@@ -39,7 +53,7 @@ public class Projectile : MonoBehaviour {
 
     private void RotateToDirection(Vector2 direction) {
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0, 0, angle);
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 
     private void Update() {
@@ -54,24 +68,35 @@ public class Projectile : MonoBehaviour {
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
-        // Игнорируем триггер до инициализации
         if (!_isInitialized) return;
 
-        // Попадание во врага
-        if (other.TryGetComponent<EnemyEntity>(out var enemy)) {
-            enemy.TakeDamage(transform, damage);
-            if (hitEffect != null) {
-                Instantiate(hitEffect, transform.position, Quaternion.identity);
+        if (owner == ProjectileOwner.Player) {
+            // Снаряд игрока — бьёт врагов
+            if (other.TryGetComponent<EnemyEntity>(out var enemy)) {
+                enemy.TakeDamage(transform, damage);
+                SpawnHitEffect();
+                Destroy(gameObject);
+                return;
             }
+        }
+        else {
+            // Снаряд врага — бьёт игрока
+            if (other.TryGetComponent<Player>(out var player)) {
+                player.TakeDamage(transform, damage);
+                SpawnHitEffect();
+                Destroy(gameObject);
+                return;
+            }
+        }
+
+        // Стена — уничтожаем в любом случае
+        if (wallLayer != 0 && ((1 << other.gameObject.layer) & wallLayer) != 0) {
             Destroy(gameObject);
         }
-        // Попадание в стену
-        else if (wallLayer != 0 && ((1 << other.gameObject.layer) & wallLayer) != 0) {
-            Destroy(gameObject);
-        }
-        // Попадание в другого врага (опционально)
-        else if (enemyLayer != 0 && ((1 << other.gameObject.layer) & enemyLayer) != 0) {
-            Destroy(gameObject);
-        }
+    }
+
+    private void SpawnHitEffect() {
+        if (hitEffect != null)
+            Instantiate(hitEffect, transform.position, Quaternion.identity);
     }
 }

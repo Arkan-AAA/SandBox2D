@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50f6091b311880bd49d0d0f58e8a2de8, type: 3}
+  m_Name: LevelBackgroundPlaylist
+  m_EditorClassIdentifier: Assembly-CSharp::Audio.PlaylistSO
+  tracks:
+  - {fileID: 8300000, guid: 65c9673ef8661f0d88253b383cdc43ec, type: 3}
+  - {fileID: 8300000, guid: d406dc0912aed253c81179dbb2a9c0ea, type: 3}
+  - {fileID: 8300000, guid: 1aefff751188efea68e2f41b81f3e6cd, type: 3}
+  - {fileID: 8300000, guid: 2c8dcc47a48682e279e4dd6ebeb36eb4, type: 3}
+  - {fileID: 8300000, guid: d90fef950d9a9f43ea2fe583defad124, type: 3}
+  - {fileID: 8300000, guid: b25c9cceb464785179b058add65b8457, type: 3}
+  - {fileID: 8300000, guid: ef154dbb50f2180c3ad3ff23aaa14096, type: 3}
+  - {fileID: 8300000, guid: cfb03d19232731e168fdb6975db9e72e, type: 3}
+  - {fileID: 8300000, guid: d80ebfbe22d9cfe649eea494b947cff5, type: 3}
+  - {fileID: 8300000, guid: 168073b68ad98a1e787fe8ff14c1a634, type: 3}
+  loopPlaylist: 1
+  shuffle: 1
+  crossfadeTime: 1
+  volume: 1
+  pitch: 1

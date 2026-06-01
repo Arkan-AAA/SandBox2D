@@ -24,7 +24,6 @@ namespace Enemies {
         [SerializeField] private float _invincibilityDuration = 0.3f;
         private bool _isInvincible = false;
 
-        // Публичное свойство для проверки неуязвимости
         public bool IsInvincible => _isInvincible;
 
         public int GetMaxHealth() => MaxHealth;
@@ -40,20 +39,23 @@ namespace Enemies {
 
         public void TakeDamage(Transform damageSource, int damage) {
             if (CurrentHealth <= 0) return;
-            if (_isInvincible) return; // Неуязвимость - урон не проходит
+            if (_isInvincible) return;
 
             CurrentHealth -= damage;
             OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
             _knockBack?.GetKnockedBack(damageSource);
 
-            // Включаем неуязвимость
             StartCoroutine(InvincibilityCoroutine());
 
+            OnHit?.Invoke();
             if (CurrentHealth <= 0) {
                 OnDeath?.Invoke();
-            }
-            else {
-                OnHit?.Invoke();
+                // Добавляем очки и убийства
+                if (GameManager.Instance != null) {
+                    GameManager.Instance.AddKill();
+                    int score = _enemySO != null ? _enemySO.scoreValue : 10;
+                    GameManager.Instance.AddScore(score);
+                }
             }
         }
 

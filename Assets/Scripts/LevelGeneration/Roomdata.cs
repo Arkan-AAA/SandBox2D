@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum RoomType { Start, Combat, Special, Shop, Elite, Boss, Treasure }
+public enum RoomType { Start, Combat, Special, Shop, Elite, Boss, Treasure, Exit }
 
 [CreateAssetMenu(menuName = "RogueLite/Room Data")]
 public class RoomData : ScriptableObject {
