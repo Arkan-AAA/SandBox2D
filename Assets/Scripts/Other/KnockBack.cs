@@ -19,24 +19,14 @@ namespace Other {
         }
 
         private void Update() {
-            // Исправлено: используем свойство IsGettingKnockedBack, а не _isGettingKnockedBack
-            if (Player.Instance == null || Player.Instance.IsDead) {
-                IsGettingKnockedBack = false;
-                return;
-            }
-
-            if (!IsGettingKnockedBack)
-                return;
+            if (!IsGettingKnockedBack) return;
 
             _knockBackMovingTimer -= Time.deltaTime;
-            if (_knockBackMovingTimer <= 0) {
+            if (_knockBackMovingTimer <= 0)
                 StopKnockBackMovement();
-            }
         }
 
         public void GetKnockedBack(Transform damageSource) {
-            if (Player.Instance == null || Player.Instance.IsDead) return;
-
             IsGettingKnockedBack = true;
             _knockBackMovingTimer = _knockBackMovingTimerMax;
             Vector2 difference = (transform.position - damageSource.position).normalized * _knockBackForce / rb.mass;

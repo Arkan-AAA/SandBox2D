@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.Tilemaps;
 
 [System.Serializable]
 public class MobData {
@@ -41,44 +39,37 @@ public class MobSpawner : MonoBehaviour {
     [Header("Босс")]
     public MobData bossMob;
 
-    [Header("Отладка")]
-    public bool showDebugLogs = true;
-
     private System.Random _rng;
-    private Transform _player;
     private Dictionary<RoomInstance, List<GameObject>> _spawnedMobs = new();
 
-    void Start() {
-        if (levelGenerator == null) {
+    void Awake() {
+        if (levelGenerator == null)
             levelGenerator = FindAnyObjectByType<LevelGenerator>();
-        }
 
-        _rng = new System.Random();
-        _player = GameObject.FindGameObjectWithTag("Player")?.transform;
-
-        // Добавляем триггеры
-        Invoke(nameof(AddRoomTriggers), 0.3f);
-
-        // Спавним мобов
-        Invoke(nameof(SpawnAllMobs), 0.5f);
+        if (levelGenerator != null)
+            levelGenerator.OnGenerated += OnLevelGenerated;
+        else
+            Debug.LogWarning("MobSpawner: LevelGenerator not found!");
     }
 
-    void AddRoomTriggers() {
-        var rooms = GetAllRooms();
-        if (rooms == null || rooms.Count == 0) {
-            Invoke(nameof(AddRoomTriggers), 0.2f);
-            return;
-        }
+    void Start() {
+        _rng = new System.Random();
+    }
 
+    void OnDestroy() {
+        if (levelGenerator != null)
+            levelGenerator.OnGenerated -= OnLevelGenerated;
+    }
+
+    void OnLevelGenerated() {
+        var rooms = GetAllRooms();
         foreach (var room in rooms) {
             if (room == null) continue;
             if (room.data.roomType == RoomType.Start) continue;
             if (room.GetComponentInChildren<RoomTrigger>() != null) continue;
-
             AddRoomTrigger(room);
         }
-
-        if (showDebugLogs) Debug.Log($"Added triggers to {rooms.Count} rooms");
+        SpawnAllMobs();
     }
 
     void AddRoomTrigger(RoomInstance room) {
@@ -86,29 +77,19 @@ public class MobSpawner : MonoBehaviour {
         triggerObj.transform.SetParent(room.transform);
         triggerObj.transform.localPosition = Vector3.zero;
 
-        BoxCollider2D collider = triggerObj.AddComponent<BoxCollider2D>();
-        collider.isTrigger = true;
-        collider.size = new Vector2(floorWidth, floorHeight);
+        BoxCollider2D col = triggerObj.AddComponent<BoxCollider2D>();
+        col.isTrigger = true;
+        col.size = new Vector2(floorWidth, floorHeight);
 
-        var trigger = triggerObj.AddComponent<RoomTrigger>();
-        trigger.Initialize(room, this);
-
-        if (showDebugLogs) Debug.Log($"Added trigger to {room.name}");
+        triggerObj.AddComponent<RoomTrigger>().Initialize(room, this);
     }
 
     void SpawnAllMobs() {
         var rooms = GetAllRooms();
-        if (rooms == null || rooms.Count == 0) {
-            Invoke(nameof(SpawnAllMobs), 0.2f);
-            return;
-        }
-
         foreach (var room in rooms) {
             if (room == null) continue;
             SpawnMobsInRoom(room);
         }
-
-        if (showDebugLogs) Debug.Log($"Spawned mobs in {_spawnedMobs.Count} rooms");
     }
 
     void SpawnMobsInRoom(RoomInstance room) {
@@ -147,21 +128,10 @@ public class MobSpawner : MonoBehaviour {
 
             GameObject mobObj = Instantiate(mob.mobPrefab, pos, Quaternion.identity, room.transform);
 
-            var agent = mobObj.GetComponent<NavMeshAgent>();
-            if (agent != null) {
-                agent.updateRotation = false;
-                agent.updateUpAxis = false;
-                agent.Warp(pos);
-            }
-
             var enemyAI = mobObj.GetComponent<EnemyAI>();
-            if (enemyAI != null) {
-                enemyAI.enabled = false;
-            }
+            if (enemyAI != null) enemyAI.enabled = false;
 
             spawned.Add(mobObj);
-
-            if (showDebugLogs) Debug.Log($"Spawned {mob.mobName} at {pos} in {room.data.roomType} (waiting for player)");
         }
 
         if (spawned.Count > 0) {
@@ -175,34 +145,18 @@ public class MobSpawner : MonoBehaviour {
         Vector3 spawnPos = room.transform.position;
         GameObject boss = Instantiate(bossMob.mobPrefab, spawnPos, Quaternion.identity, room.transform);
 
-        var agent = boss.GetComponent<NavMeshAgent>();
-        if (agent != null) {
-            agent.updateRotation = false;
-            agent.updateUpAxis = false;
-            agent.Warp(spawnPos);
-        }
-
         var enemyAI = boss.GetComponent<EnemyAI>();
-        if (enemyAI != null) {
-            enemyAI.enabled = false;
-        }
+        if (enemyAI != null) enemyAI.enabled = false;
 
         _spawnedMobs[room] = new List<GameObject> { boss };
-        if (showDebugLogs) Debug.Log($"Spawned boss at {spawnPos} (waiting for player)");
     }
 
     public void OnPlayerEnteredRoom(RoomInstance room) {
         if (!_spawnedMobs.ContainsKey(room)) return;
-
-        if (showDebugLogs) Debug.Log($"Player entered {room.data.roomType} room, activating mobs");
-
         foreach (var mob in _spawnedMobs[room]) {
-            if (mob != null) {
-                var enemyAI = mob.GetComponent<EnemyAI>();
-                if (enemyAI != null) {
-                    enemyAI.enabled = true;
-                }
-            }
+            if (mob == null) continue;
+            var enemyAI = mob.GetComponent<EnemyAI>();
+            if (enemyAI != null) enemyAI.enabled = true;
         }
     }
 
@@ -249,18 +203,6 @@ public class MobSpawner : MonoBehaviour {
 
     List<RoomInstance> GetAllRooms() {
         if (levelGenerator == null) return new List<RoomInstance>();
-
-        var field = levelGenerator.GetType().GetField("_allRooms",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        var rooms = field?.GetValue(levelGenerator) as System.Collections.IList;
-
-        List<RoomInstance> result = new List<RoomInstance>();
-        if (rooms != null) {
-            foreach (var room in rooms) {
-                result.Add(room as RoomInstance);
-            }
-        }
-        return result;
+        return levelGenerator.GetAllRooms();
     }
 }

@@ -717,6 +717,7 @@ GameObject:
   - component: {fileID: 4889472621189311922}
   - component: {fileID: 5995095033929206844}
   - component: {fileID: 9200465697587255355}
+  - component: {fileID: 2794550146843060746}
   m_Layer: 5
   m_Name: PausePanel
   m_TagString: Untagged
@@ -813,7 +814,19 @@ MonoBehaviour:
   resumeButton: {fileID: 6270943688932751842}
   optionsButton: {fileID: 6852237538399610899}
   mainMenuButton: {fileID: 539151683147052826}
-  quitButton: {fileID: 0}
+  quitButton: {fileID: 2443509444393961121}
+--- !u!114 &2794550146843060746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8218919838057140259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 442786afc7d763b19897010ffb9b370e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UISelectOnHoverInstaller
 --- !u!1 &8281276390092273366
 GameObject:
   m_ObjectHideFlags: 0
@@ -1115,6 +1128,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3b24a5d313f954d878974db674b39613, type: 3}
+--- !u!114 &2443509444393961121 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 966667604701617866, guid: 3b24a5d313f954d878974db674b39613, type: 3}
+  m_PrefabInstance: {fileID: 3207510662917134443}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &3195480143228277460 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 61921980904606399, guid: 3b24a5d313f954d878974db674b39613, type: 3}

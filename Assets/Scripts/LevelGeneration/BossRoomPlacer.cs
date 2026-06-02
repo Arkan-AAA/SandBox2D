@@ -79,29 +79,17 @@ public class BossRoomPlacer : MonoBehaviour {
     }
 
     private bool CheckCollision(Vector3 position, Vector2 size) {
-        // Получаем все существующие комнаты
-        var roomsField = levelGenerator.GetType().GetField("_allRooms",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        var allRooms = roomsField?.GetValue(levelGenerator) as System.Collections.IList;
-        if (allRooms == null) return false;
-
+        var allRooms = levelGenerator.GetAllRooms();
         Bounds bossBounds = new Bounds(position, new Vector3(size.x, size.y, 0));
 
         foreach (RoomInstance room in allRooms) {
             if (room == null) continue;
             Vector2 roomSize = GetRoomSize(room.data);
             Bounds roomBounds = new Bounds(room.transform.position, new Vector3(roomSize.x, roomSize.y, 0));
-
-            // Добавляем небольшой отступ
             bossBounds.Expand(0.5f);
             roomBounds.Expand(0.5f);
-
-            if (bossBounds.Intersects(roomBounds)) {
-                return true;
-            }
+            if (bossBounds.Intersects(roomBounds)) return true;
         }
-
         return false;
     }
 

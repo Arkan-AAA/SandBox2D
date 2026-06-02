@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public enum GameState { None, MainMenu, Playing, Paused, GameOver }
 
@@ -48,10 +49,14 @@ public class GameManager : MonoBehaviour {
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    private void OnDestroy() => SceneManager.sceneLoaded -= OnSceneLoaded;
-
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
+        if (scene.name == gameSceneName) {
+            Player player = FindAnyObjectByType<Player>();
+            Debug.Log($"Player found on scene {scene.name}: {player != null}, isDecoration={player?.isDecoration}");
+        }
+
         FindUIElements();
+        SubscribeToGameInput();
         if (gameOverPanel != null) SetPanelImmediate(gameOverPanel, false);
         if (pausePanel != null) SetPanelImmediate(pausePanel, false);
         if (hudCanvas != null) SetPanelImmediate(hudCanvas, scene.name != mainMenuSceneName);
@@ -72,26 +77,41 @@ public class GameManager : MonoBehaviour {
     }
 
     private void FindUIElements() {
-        var canvases = FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include);
-        foreach (var c in canvases) {
-            if (c.name == "HUDCanvas") hudCanvas = c;
-            if (c.name == "PausePanel") pausePanel = c;
-            if (c.name == "GameOverPanel") gameOverPanel = c;
-            if (c.name == "MainMenuPanel") mainMenuPanel = c;
-        }
+        // Ищем CanvasGroup по имени — быстрее чем FindObjectsByType
+        hudCanvas = FindCanvasGroup("HUDCanvas");
+        pausePanel = FindCanvasGroup("PausePanel");
+        gameOverPanel = FindCanvasGroup("GameOverPanel");
+        mainMenuPanel = FindCanvasGroup("MainMenuPanel");
+
+        if (darkOverlay == null)
+            darkOverlay = FindCanvasGroup("DarkOverlay");
+
         inventoryPanel = FindInactiveObjectByName("InventoryPanel");
         optionsPanel = FindInactiveObjectByName("OptionsPanel");
-        if (darkOverlay == null)
-            darkOverlay = GameObject.Find("DarkOverlay")?.GetComponent<CanvasGroup>();
-        if (mainMenuPanel == null)
-            mainMenuPanel = GameObject.Find("MainMenuPanel")?.GetComponent<CanvasGroup>();
+    }
+
+    private CanvasGroup FindCanvasGroup(string name) {
+        var go = FindInactiveObjectByName(name);
+        return go != null ? go.GetComponent<CanvasGroup>() : null;
     }
 
     private GameObject FindInactiveObjectByName(string name) {
-        var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-        foreach (var go in allObjects)
-            if (go.name == name && go.scene.IsValid())
-                return go;
+        var roots = SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var root in roots) {
+            var found = root.transform.Find(name);
+            if (found != null) return found.gameObject;
+            var child = FindInChildren(root.transform, name);
+            if (child != null) return child;
+        }
+        return null;
+    }
+
+    private GameObject FindInChildren(Transform parent, string name) {
+        foreach (Transform child in parent) {
+            if (child.name == name) return child.gameObject;
+            var found = FindInChildren(child, name);
+            if (found != null) return found;
+        }
         return null;
     }
 
@@ -185,12 +205,20 @@ public class GameManager : MonoBehaviour {
         if (CurrentState == GameState.None) SetState(GameState.Playing);
     }
 
-    private void Update() {
-        if (CurrentState != GameState.Playing && CurrentState != GameState.Paused) return;
-        if (Keyboard.current?.escapeKey.wasPressedThisFrame == true || Gamepad.current?.startButton.wasPressedThisFrame == true)
-            TogglePause();
-        if (CurrentState == GameState.Playing && Keyboard.current?.tabKey.wasPressedThisFrame == true)
-            ToggleInventory();
+    private void SubscribeToGameInput() {
+        if (GameInput.Instance == null) return;
+        GameInput.Instance.OnPause -= TogglePause;
+        GameInput.Instance.OnInventory -= ToggleInventory;
+        GameInput.Instance.OnPause += TogglePause;
+        GameInput.Instance.OnInventory += ToggleInventory;
+    }
+
+    private void OnDestroy() {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (GameInput.Instance != null) {
+            GameInput.Instance.OnPause -= TogglePause;
+            GameInput.Instance.OnInventory -= ToggleInventory;
+        }
     }
 
     public void SetState(GameState newState) {
@@ -213,6 +241,12 @@ public class GameManager : MonoBehaviour {
                 if (mainMenuPanel != null && !mainMenuPanel.gameObject.activeSelf)
                     SetPanelImmediate(mainMenuPanel, true);
                 GameInput.Instance?.DisableInput();
+                GameInput.Instance?.EnableUIInput();
+                // Установить фокус на первую кнопку главного меню
+                StartCoroutine(SetFocusAfterDelay(mainMenuPanel, () => {
+                    var mainMenu = FindAnyObjectByType<MainMenu>();
+                    if (mainMenu != null) mainMenu.SetFocusToDefaultButton();
+                }));
                 break;
 
             case GameState.Playing:
@@ -226,17 +260,26 @@ public class GameManager : MonoBehaviour {
                 if (mainMenuPanel != null && mainMenuPanel.gameObject.activeSelf)
                     SetPanelImmediate(mainMenuPanel, false);
                 GameInput.Instance?.EnableInput();
+                GameInput.Instance?.DisableUIInput();
+                // Сбросить выбранный объект в EventSystem
+                if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
                 break;
 
             case GameState.Paused:
                 Time.timeScale = 0f;
                 SetPanelImmediate(hudCanvas, true);
                 SetDarkOverlayVisible(true, fadeDuration);
-                if (pausePanel != null && pausePanel.alpha < 0.5f)
+                if (pausePanel != null && pausePanel.alpha < 0.5f) {
                     ShowPanel(pausePanel, fadeDuration);
+                    StartCoroutine(SetFocusAfterDelay(pausePanel, () => {
+                        var pauseUI = FindAnyObjectByType<PauseMenuUI>();
+                        if (pauseUI != null) pauseUI.SetFocus();
+                    }));
+                }
                 SetPanelImmediate(gameOverPanel, false);
                 if (inventoryPanel) inventoryPanel.SetActive(false);
                 GameInput.Instance?.DisableInput();
+                GameInput.Instance?.EnableUIInput();
                 break;
 
             case GameState.GameOver:
@@ -248,15 +291,30 @@ public class GameManager : MonoBehaviour {
                 if (inventoryPanel) inventoryPanel.SetActive(false);
                 SetDarkOverlayVisible(false, 0.15f);
                 GameInput.Instance?.DisableInput();
+                GameInput.Instance?.EnableUIInput();
+                // Установить фокус на кнопку Restart
+                var gameOverUI = FindAnyObjectByType<GameOverUI>();
+                if (gameOverUI != null) gameOverUI.SetFocus();
                 break;
         }
     }
 
+    private IEnumerator SetFocusAfterDelay(CanvasGroup panel, Action onFocus) {
+        float timeout = 1f;
+        float elapsed = 0f;
+        while (panel != null && panel.alpha < 0.99f && elapsed < timeout) {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        yield return null; // один кадр после готовности
+        onFocus?.Invoke();
+    }
+
     private void HideOptionsPanelIfVisible() {
         if (optionsPanel == null) return;
-        CanvasGroup optCg = optionsPanel.GetComponent<CanvasGroup>();
+        var optCg = optionsPanel.GetComponent<CanvasGroup>();
         if (optCg != null && optCg.gameObject.activeSelf)
-            HidePanel(optCg, fadeDuration);
+            SetPanelImmediate(optCg, false);
     }
 
     // ─── Инвентарь ───────────────────────────────────────────────────────
@@ -271,66 +329,74 @@ public class GameManager : MonoBehaviour {
 
     // ─── Панель настроек (универсально) ───────────────────────────────────
     public void ToggleOptions() {
-        Debug.Log("ToggleOptions called");
-        if (optionsPanel == null) {
-            Debug.LogError("optionsPanel is NULL! Check assignment.");
-            return;
-        }
-        Debug.Log("optionsPanel found: " + optionsPanel.name);
-        CanvasGroup optCg = optionsPanel.GetComponent<CanvasGroup>();
-        if (optCg == null) {
-            Debug.LogError("CanvasGroup missing on OptionsPanel");
-            return;
-        }
-        Debug.Log("CanvasGroup OK, alpha=" + optCg.alpha + ", activeSelf=" + optCg.gameObject.activeSelf);
+        Debug.Log($"[Options] optionsPanel={optionsPanel}, state={CurrentState}");
+        if (optionsPanel == null) return;
+        var optCg = optionsPanel.GetComponent<CanvasGroup>();
+        if (optCg == null) return;
 
-        bool isOptionsVisible = optCg.alpha > 0.5f && optCg.gameObject.activeSelf;
-
-        if (isOptionsVisible)
+        if (optCg.gameObject.activeSelf && optCg.alpha > 0.5f)
             StartCoroutine(CloseOptionsAndRestore(optCg));
         else
-            StartCoroutine(OpenOptionsAndHidePrevious(optCg));
+            StartCoroutine(OpenOptions(optCg));
     }
 
-    private IEnumerator OpenOptionsAndHidePrevious(CanvasGroup optCg) {
-        if (CurrentState == GameState.Paused) {
-            if (pausePanel != null && pausePanel.alpha > 0.5f)
-                HidePanel(pausePanel, fadeDuration);
-        }
-        else if (CurrentState == GameState.MainMenu) {
-            if (mainMenuPanel != null && mainMenuPanel.alpha > 0.5f) {
-                SetDarkOverlayVisible(true, fadeDuration);
-                HidePanel(mainMenuPanel, fadeDuration);
-            }
-        }
+    private IEnumerator OpenOptions(CanvasGroup optCg) {
+        Debug.Log($"[Options] Opening, optCg={optCg.name}, alpha={optCg.alpha}, active={optCg.gameObject.activeSelf}");
+        SetPanelImmediate(optCg, true);
+        Debug.Log($"[Options] After SetPanelImmediate, alpha={optCg.alpha}, active={optCg.gameObject.activeSelf}");
+        // Скрываем текущую панель
+        if (CurrentState == GameState.Paused && pausePanel != null)
+            HidePanel(pausePanel, fadeDuration);
+        else if (CurrentState == GameState.MainMenu && mainMenuPanel != null)
+            HidePanel(mainMenuPanel, fadeDuration);
         else if (CurrentState == GameState.Playing) {
             SetState(GameState.Paused);
-            yield return new WaitForSecondsRealtime(0.05f);
-            if (pausePanel != null && pausePanel.alpha > 0.5f)
-                HidePanel(pausePanel, fadeDuration);
+            if (pausePanel != null) HidePanel(pausePanel, fadeDuration);
         }
-        ShowPanel(optCg, fadeDuration);
+
+        // Показываем options немедленно (без fade-зависимости)
+        SetPanelImmediate(optCg, true);
+
+        // Фокус на первый элемент
+        var optCtrl = optCg.GetComponent<OptionsPanelController>();
+        if (optCtrl != null && optCtrl.firstSelected != null && EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(optCtrl.firstSelected.gameObject);
+
+        yield break;
     }
 
     private IEnumerator CloseOptionsAndRestore(CanvasGroup optCg) {
-        HidePanel(optCg, fadeDuration);
-        yield return new WaitForSecondsRealtime(0.1f);
+        SetPanelImmediate(optCg, false);
 
-        if (CurrentState == GameState.Paused) {
-            if (pausePanel != null && pausePanel.alpha < 0.5f)
-                ShowPanel(pausePanel, fadeDuration);
+        if (CurrentState == GameState.Paused && pausePanel != null) {
+            SetPanelImmediate(pausePanel, true);
+            yield return null;
+            yield return null; // два кадра для надёжности
+            var pauseUI = FindAnyObjectByType<PauseMenuUI>();
+            if (pauseUI != null) pauseUI.SetFocus();
         }
-        else if (CurrentState == GameState.MainMenu) {
-            if (mainMenuPanel != null && mainMenuPanel.alpha < 0.5f) {
-                ShowPanel(mainMenuPanel, fadeDuration);
-                SetDarkOverlayVisible(false, fadeDuration);
-            }
+        else if (CurrentState == GameState.MainMenu && mainMenuPanel != null) {
+            SetPanelImmediate(mainMenuPanel, true);
+            SetDarkOverlayVisible(false, fadeDuration);
+            yield return null;
+            yield return null;
+            var mainMenu = FindAnyObjectByType<MainMenu>();
+            if (mainMenu != null) mainMenu.SetFocusToDefaultButton();
+        }
+        else {
+            yield return null; // гарантируем что это корутина
         }
     }
 
     // ─── Пауза ────────────────────────────────────────────────────────────
     public void TogglePause() {
         if (IsGameOver) return;
+        // Если options открыт — закрыть его и вернуться в паузу
+        if (optionsPanel != null && optionsPanel.activeSelf) {
+            var optCg = optionsPanel.GetComponent<CanvasGroup>();
+            if (optCg != null) StartCoroutine(CloseOptionsAndRestore(optCg));
+            return;
+        }
         SetState(IsPaused ? GameState.Playing : GameState.Paused);
     }
 
@@ -340,13 +406,17 @@ public class GameManager : MonoBehaviour {
     public void GameOver() {
         if (_isGameOverTriggered) return;
         _isGameOverTriggered = true;
-        Debug.Log("GameOver called!");
         SetState(GameState.GameOver);
     }
 
     public void RestartLevel() {
         Time.timeScale = 1f;
         _isGameOverTriggered = false;
+        floorIndex = 0;
+        totalScore = 0;
+        totalKills = 0;
+        OnScoreChanged?.Invoke(totalScore);
+        OnKillsChanged?.Invoke(totalKills);
         SetPanelImmediate(gameOverPanel, false);
         SetPanelImmediate(pausePanel, false);
         SceneManager.LoadScene(gameSceneName);

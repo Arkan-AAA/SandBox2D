@@ -32,11 +32,9 @@ public class EnemyAI : MonoBehaviour {
     [SerializeField] private bool _isAttackingEnemy;
 #endif
 
-    // ── События ─────────────────────────────────────────────────
     public event EventHandler OnFlashBlink;
-    public event Action OnAlert;        // враг заметил игрока
-    public event Action OnAttackSound;  // обычная атака (для EnemySounds)
-    // ─────────────────────────────────────────────────────────────
+    public event Action OnAlert;
+    public event Action OnAttackSound;
 
     protected Rigidbody2D _rb;
     protected State state;

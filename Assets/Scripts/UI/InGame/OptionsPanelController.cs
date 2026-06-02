@@ -1,8 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Audio;
+using UnityEngine.EventSystems;
 
 public class OptionsPanelController : MonoBehaviour {
+    [Header("Navigation")]
+    public Selectable firstSelected;
+
     [Header("Audio")]
     public AudioMixer audioMixer;
     public Slider masterSlider;
@@ -32,34 +36,30 @@ public class OptionsPanelController : MonoBehaviour {
         fullscreenToggle.onValueChanged.AddListener(SetFullscreen);
     }
 
+    private static float ToDb(float value) => Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f;
+
     public void SetMasterVolume(float value) {
-        audioMixer.SetFloat("MasterVolume", Mathf.Log10(value) * 20);
+        audioMixer.SetFloat("MasterVolume", ToDb(value));
         PlayerPrefs.SetFloat(MASTER_VOL_KEY, value);
     }
 
     public void SetMusicVolume(float value) {
-        audioMixer.SetFloat("MusicVolume", Mathf.Log10(value) * 20);
+        audioMixer.SetFloat("MusicVolume", ToDb(value));
         PlayerPrefs.SetFloat(MUSIC_VOL_KEY, value);
     }
 
     public void SetSFXVolume(float value) {
-        audioMixer.SetFloat("SFXVolume", Mathf.Log10(value) * 20);
+        audioMixer.SetFloat("SFXVolume", ToDb(value));
         PlayerPrefs.SetFloat(SFX_VOL_KEY, value);
     }
 
     public void SetUIVolume(float value) {
-        audioMixer.SetFloat("UIVolume", Mathf.Log10(value) * 20);
+        audioMixer.SetFloat("UIVolume", ToDb(value));
         PlayerPrefs.SetFloat(UI_VOL_KEY, value);
     }
 
     public void SetMute(bool isMuted) {
-        if (isMuted) {
-            audioMixer.SetFloat("MasterVolume", -80f);
-        }
-        else {
-            float masterValue = masterSlider != null ? masterSlider.value : 1f;
-            audioMixer.SetFloat("MasterVolume", Mathf.Log10(masterValue) * 20);
-        }
+        audioMixer.SetFloat("MasterVolume", isMuted ? -80f : ToDb(masterSlider != null ? masterSlider.value : 1f));
         PlayerPrefs.SetInt(MUTE_KEY, isMuted ? 1 : 0);
     }
 
@@ -84,14 +84,14 @@ public class OptionsPanelController : MonoBehaviour {
         if (fullscreenToggle != null) fullscreenToggle.isOn = fs;
 
         if (!muted) {
-            audioMixer.SetFloat("MasterVolume", Mathf.Log10(master) * 20);
+            audioMixer.SetFloat("MasterVolume", ToDb(master));
         }
         else {
             audioMixer.SetFloat("MasterVolume", -80f);
         }
-        audioMixer.SetFloat("MusicVolume", Mathf.Log10(music) * 20);
-        audioMixer.SetFloat("SFXVolume", Mathf.Log10(sfx) * 20);
-        audioMixer.SetFloat("UIVolume", Mathf.Log10(ui) * 20);
+        audioMixer.SetFloat("MusicVolume", ToDb(music));
+        audioMixer.SetFloat("SFXVolume", ToDb(sfx));
+        audioMixer.SetFloat("UIVolume", ToDb(ui));
         Screen.fullScreen = fs;
     }
 
@@ -105,5 +105,10 @@ public class OptionsPanelController : MonoBehaviour {
             GameManager.Instance.ToggleOptions();
         else
             gameObject.SetActive(false);
+    }
+
+    private void OnEnable() {
+        if (firstSelected != null && EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(firstSelected.gameObject);
     }
 }

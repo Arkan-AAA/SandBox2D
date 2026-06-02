@@ -2,14 +2,15 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using Audio;
 
 public class MainMenu : MonoBehaviour {
-    [Header("UI Group (общая панель: тень, текст, кнопки)")]
+    [Header("UI Group")]
     public CanvasGroup mainMenuGroup;
     public float uiFadeInDuration = 1f;
 
-    [Header("Transition (ходьба к двери)")]
+    [Header("Transition")]
     public Transform player;
     public Transform doorPoint;
     public float walkSpeed = 3f;
@@ -20,9 +21,9 @@ public class MainMenu : MonoBehaviour {
     public Animator playerAnimator;
 
     [Header("Music")]
-    public PlaylistSO menuPlaylist;   // ← используем готовый PlaylistSO (AudioClip[])
+    public PlaylistSO menuPlaylist;
 
-    [Header("Footsteps Sound")]
+    [Header("Footsteps")]
     public AudioClip footstepsClip;
     [Range(0f, 1f)] public float footstepsVolume = 0.5f;
 
@@ -30,18 +31,25 @@ public class MainMenu : MonoBehaviour {
     private bool _fadeComplete = false;
     private Image _fadeImage;
     private AudioSource _footstepsSource;
+    private Button _firstButton;
 
     private void Start() {
         DisableCombatComponents();
         SetupFadePanel();
-        if (player == null) FindPlayer();
+        // player назначается только вручную в инспекторе — не ищем через FindAnyObjectByType
         if (GameInput.Instance != null) GameInput.Instance.DisableInput();
-        if (GameManager.Instance != null) GameManager.Instance.SetState(GameState.MainMenu);
 
         if (mainMenuGroup != null) {
             mainMenuGroup.alpha = 0f;
             mainMenuGroup.interactable = true;
             mainMenuGroup.blocksRaycasts = true;
+        }
+
+        // Найти первую кнопку в главном меню (например, "PlayButton")
+        _firstButton = GetComponentInChildren<Button>();
+        if (_firstButton == null) {
+            Button[] btns = GetComponentsInChildren<Button>();
+            if (btns.Length > 0) _firstButton = btns[0];
         }
 
         StartCoroutine(FadeInMainMenu());
@@ -52,17 +60,30 @@ public class MainMenu : MonoBehaviour {
         if (mainMenuGroup == null) yield break;
         float t = 0f;
         while (t < uiFadeInDuration) {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             mainMenuGroup.alpha = Mathf.Clamp01(t / uiFadeInDuration);
             yield return null;
         }
         mainMenuGroup.alpha = 1f;
+        SetFocusToDefaultButton();
     }
 
     private IEnumerator PlayMenuMusic() {
-        yield return null; // ждём инициализации AudioManager
+        yield return null;
         if (AudioManager.Instance != null && menuPlaylist != null)
             AudioManager.Instance.StartPlaylist(menuPlaylist);
+    }
+
+    /// <summary>Устанавливает фокус на кнопку по умолчанию (первую в меню).</summary>
+    public void SetFocusToDefaultButton() {
+        if (_firstButton != null && EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(_firstButton.gameObject);
+        else {
+            // fallback: найти любую кнопку
+            Button anyButton = GetComponentInChildren<Button>();
+            if (anyButton != null && EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(anyButton.gameObject);
+        }
     }
 
     private void SetupFadePanel() {
@@ -99,35 +120,15 @@ public class MainMenu : MonoBehaviour {
         fadePanel.transform.SetAsLastSibling();
     }
 
-    private void FindPlayer() {
-        var playerObject = FindAnyObjectByType<Player>();
-        if (playerObject != null) {
-            player = playerObject.transform;
-            player.gameObject.SetActive(true);
-            player.position = new Vector3(-5f, player.position.y, 0);
-
-            if (playerAnimator == null)
-                playerAnimator = player.GetComponent<Animator>();
-
-            if (playerAnimator != null) {
-                playerAnimator.SetBool("IsRunning", false);
-                playerAnimator.Play("idle", 0, 0f);
-            }
-        }
-    }
-
     private void DisableCombatComponents() {
-        var activeWeapon = FindAnyObjectByType<ActiveWeapon>();
-        if (activeWeapon != null) activeWeapon.enabled = false;
-
-        var weaponInput = FindAnyObjectByType<WeaponInput>();
-        if (weaponInput != null) weaponInput.enabled = false;
-
-        var weaponInventory = FindAnyObjectByType<WeaponInventory>();
-        if (weaponInventory != null) weaponInventory.enabled = false;
-
-        var swords = FindObjectsByType<Sword>(FindObjectsInactive.Include);
-        foreach (var sword in swords) sword.enabled = false;
+        // Отключаем компоненты только на декоративном персонаже в MainMenu (назначен через player)
+        if (player == null) return;
+        if (playerAnimator == null)
+            playerAnimator = player.GetComponent<Animator>();
+        if (playerAnimator != null) {
+            playerAnimator.SetBool("IsRunning", false);
+            playerAnimator.Play("idle", 0, 0f);
+        }
     }
 
     // ─── Кнопки главного меню ─────────────────────────────────────────
@@ -155,67 +156,50 @@ public class MainMenu : MonoBehaviour {
     private IEnumerator PlayTransition() {
         _isTransitioning = true;
         _fadeComplete = false;
+        Debug.Log("[Transition] START");
 
-        // Плавно скрываем UI главного меню
         if (mainMenuGroup != null) {
             float t = 0f;
             float startAlpha = mainMenuGroup.alpha;
             while (t < 0.2f) {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 mainMenuGroup.alpha = Mathf.Lerp(startAlpha, 0f, t / 0.2f);
                 yield return null;
             }
             mainMenuGroup.alpha = 0f;
             mainMenuGroup.interactable = false;
         }
+        Debug.Log("[Transition] UI hidden");
 
         if (player != null) {
-            player.gameObject.SetActive(true);
-            player.position = new Vector3(-5f, player.position.y, 0);
-
-            if (playerAnimator != null)
-                playerAnimator.SetBool("IsRunning", true);
-
-            // Воспроизводим звук шагов через временный AudioSource
-            if (footstepsClip != null) {
-                _footstepsSource = gameObject.AddComponent<AudioSource>();
-                _footstepsSource.clip = footstepsClip;
-                _footstepsSource.volume = footstepsVolume;
-                _footstepsSource.loop = true;
-                _footstepsSource.Play();
-            }
-
-            float doorX = doorPoint != null ? doorPoint.position.x : 5f;
+            Debug.Log($"[Transition] Player found, doorPoint={doorPoint}, walkSpeed={walkSpeed}");
+            float doorX = doorPoint != null ? doorPoint.position.x : player.position.x + 10f;
             float startX = player.position.x;
             float duration = Mathf.Abs(doorX - startX) / walkSpeed;
+            Debug.Log($"[Transition] doorX={doorX}, startX={startX}, duration={duration}");
 
             StartCoroutine(FadeToBlack());
+            Debug.Log("[Transition] FadeToBlack started");
 
             float elapsed = 0f;
             while (elapsed < duration) {
-                elapsed += Time.deltaTime;
-                float progress = elapsed / duration;
-                float x = Mathf.Lerp(startX, doorX, progress);
-                player.position = new Vector3(x, player.position.y, 0);
+                elapsed += Time.unscaledDeltaTime;
+                player.position = new Vector3(Mathf.Lerp(startX, doorX, elapsed / duration), player.position.y, 0);
                 yield return null;
             }
-
-            // Останавливаем и удаляем временный AudioSource
-            if (_footstepsSource != null) {
-                _footstepsSource.Stop();
-                Destroy(_footstepsSource);
-            }
-
-            if (playerAnimator != null)
-                playerAnimator.SetBool("IsRunning", false);
+            Debug.Log("[Transition] Walk complete");
         }
         else {
+            Debug.Log("[Transition] No player, starting FadeToBlack directly");
             StartCoroutine(FadeToBlack());
         }
 
+        Debug.Log($"[Transition] Waiting for fade, _fadeComplete={_fadeComplete}");
         while (!_fadeComplete) yield return null;
+        Debug.Log("[Transition] Fade complete, loading scene");
 
-        // Загружаем игровую сцену
+        if (player != null) Destroy(player.gameObject);
+
         if (GameManager.Instance != null)
             GameManager.Instance.LoadGameScene();
         else
@@ -233,7 +217,7 @@ public class MainMenu : MonoBehaviour {
 
         float t = 0f;
         while (t < fadeDuration) {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             float alpha = Mathf.Clamp01(t / fadeDuration);
             if (fadePanel != null) fadePanel.alpha = alpha;
             if (_fadeImage != null) _fadeImage.color = new Color(0, 0, 0, alpha);

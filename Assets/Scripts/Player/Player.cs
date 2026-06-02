@@ -27,6 +27,9 @@ public class Player : MonoBehaviour {
     [SerializeField]
     private float _dashCooldown = 1f;
 
+    [SerializeField] public bool isDecoration = false;
+    public bool IsDecoration => isDecoration;
+
     private float minMovingSpeed = 0.1f;
     private bool isRunning = false;
     private Rigidbody2D rb;
@@ -38,7 +41,6 @@ public class Player : MonoBehaviour {
     private bool _canTakeDamage;
     private bool _isDashing;
     private bool _canDash = true;
-    private bool _isDead;
     private FlashBlink _flashBlink;
     private Vector2 _dashDirection;
 
@@ -55,9 +57,10 @@ public class Player : MonoBehaviour {
     public event Action OnPlayerDeath;
 
     private void Awake() {
-        Instance = this;
+        if (!isDecoration)
+            Instance = this;
         rb = GetComponent<Rigidbody2D>();
-        rb.freezeRotation = true;
+        if (rb != null) rb.freezeRotation = true;
         playerVisual = GetComponentInChildren<PlayerVisual>();
         _knockBack = GetComponent<KnockBack>();
         _flashBlink = GetComponent<FlashBlink>();
@@ -65,6 +68,8 @@ public class Player : MonoBehaviour {
     }
 
     private void Start() {
+        if (isDecoration) return;
+
         _canTakeDamage = true;
         _currentHealth = _maxHealth;
         _onAttack = (s, e) => ActiveWeapon.Instance.Attack();
@@ -79,11 +84,12 @@ public class Player : MonoBehaviour {
     }
 
     private void FixedUpdate() {
+        if (isDecoration) return;
         HandleMovement();
     }
 
     public void TakeDamage(Transform damageSource, int damage) {
-        if (_isDead || !_canTakeDamage) return;
+        if (isDecoration || IsDead || !_canTakeDamage) return;
         _canTakeDamage = false;
         _currentHealth = Mathf.Max(0, _currentHealth -= damage);
         OnHealthChanged?.Invoke(_currentHealth, _maxHealth);
@@ -97,8 +103,8 @@ public class Player : MonoBehaviour {
     public bool IsDead { get; private set; } = false;
 
     private void DetectDeath() {
-        if (_currentHealth <= 0 && !_isDead) {
-            _isDead = true;
+        if (_currentHealth <= 0 && !IsDead) {
+            IsDead = true;
             _currentHealth = 0;
             _canTakeDamage = false;
 
@@ -129,6 +135,8 @@ public class Player : MonoBehaviour {
     }
 
     private void OnDestroy() {
+        if (!isDecoration) Instance = null;
+        if (isDecoration || GameInput.Instance == null) return;
         GameInput.Instance.OnPlayerAttack -= _onAttack;
         GameInput.Instance.OnPlayerAttackHeld -= _onAttackHeld;
         GameInput.Instance.OnPlayerAttackReleased -= _onAttackReleased;
@@ -141,7 +149,7 @@ public class Player : MonoBehaviour {
     }
 
     private void HandleMovement() {
-        if (_isDead || _knockBack.IsGettingKnockedBack || _isDashing)
+        if (IsDead || _knockBack.IsGettingKnockedBack || _isDashing)
             return;
         Vector2 inputVector = GameInput.Instance.GetMovementVector();
         rb.MovePosition(rb.position + inputVector * (movingSpeed * Time.fixedDeltaTime));
@@ -156,7 +164,7 @@ public class Player : MonoBehaviour {
     }
 
     private IEnumerator Dash() {
-        if (!_canDash || _dashDirection == Vector2.zero || _isDead)
+        if (!_canDash || _dashDirection == Vector2.zero || IsDead)
             yield break;
 
         _canDash = false;

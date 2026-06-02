@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1164249283791560362}
   - component: {fileID: 4935480478920412243}
   - component: {fileID: 7576971838773606370}
+  - component: {fileID: 2238469954116171952}
   m_Layer: 5
   m_Name: GameOverPanel
   m_TagString: Untagged
@@ -114,6 +115,18 @@ MonoBehaviour:
   quitButton: {fileID: 6021953904514461230}
   scoreText: {fileID: 8281137007551195554}
   enemiesKilledText: {fileID: 914075108552939687}
+--- !u!114 &2238469954116171952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 675078990955463365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 442786afc7d763b19897010ffb9b370e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UISelectOnHoverInstaller
 --- !u!1 &1498966587781156150
 GameObject:
   m_ObjectHideFlags: 0

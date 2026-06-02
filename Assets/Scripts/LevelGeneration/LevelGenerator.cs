@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 using Audio;
@@ -16,7 +17,7 @@ public class LevelGenerator : MonoBehaviour {
     [Header("Комнаты")]
     public RoomData startRoomData;
     public RoomData bossRoomData;
-    public RoomData exitRoomData;                     // ← комната выхода (назначается в инспекторе)
+    public RoomData exitRoomData;
     public List<RoomData> combatRooms;
     public List<RoomData> specialRooms;
     public List<RoomData> eliteRooms;
@@ -44,13 +45,16 @@ public class LevelGenerator : MonoBehaviour {
     private Dictionary<Vector2Int, int> _roomDepth = new();
     private int _targetRoomCount;
     private System.Random _rng;
+    private Dictionary<RoomData, DoorDirection[]> _prefabDoorCache = new();
+
+    public event System.Action OnGenerated;
 
     private void Awake() {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
 
-    void Start() => Generate();
+    void Start() => StartCoroutine(GenerateNextFrame());
 
     [ContextMenu("Generate")]
     public void Generate() {
@@ -79,6 +83,13 @@ public class LevelGenerator : MonoBehaviour {
 
         if (AudioManager.Instance != null && _levelPlaylist != null)
             AudioManager.Instance.StartPlaylist(_levelPlaylist);
+
+        OnGenerated?.Invoke();
+    }
+
+    private IEnumerator GenerateNextFrame() {
+        yield return null;
+        Generate();
     }
 
     private Vector3 CalculateBossRoomPosition(RoomInstance targetRoom, DoorPoint targetDoor) {
@@ -151,8 +162,6 @@ public class LevelGenerator : MonoBehaviour {
 
         _grid.Add(gridPos, instance);
         _allRooms.Add(instance);
-
-        Debug.Log($"Spawned {data.roomType} at {gridPos} -> world {worldPos}");
 
         return instance;
     }
@@ -314,14 +323,12 @@ public class LevelGenerator : MonoBehaviour {
             return;
         }
 
-        // Находим комнату босса
         var bossRoom = _allRooms.FirstOrDefault(r => r.data.roomType == RoomType.Boss);
         if (bossRoom == null) {
             Debug.LogWarning("Boss room not found, cannot spawn exit.");
             return;
         }
 
-        // Ищем свободную дверь в комнате босса (не соединённую)
         var freeDoor = bossRoom.GetFreeDoors().FirstOrDefault();
         if (freeDoor == null) {
             Debug.LogWarning("Boss room has no free door for exit.");
@@ -334,7 +341,6 @@ public class LevelGenerator : MonoBehaviour {
             return;
         }
 
-        // ВАЖНО: передаём соседнюю комнату и дверь, чтобы позиция рассчиталась правильно
         RoomInstance exitRoom = SpawnRoom(exitRoomData, exitPos, bossRoom, freeDoor);
         if (exitRoom == null) return;
 
@@ -416,11 +422,11 @@ public class LevelGenerator : MonoBehaviour {
 
     private RoomData PickDeadEndRoom(DoorDirection incomingDirection) {
         DoorDirection neededDoor = OppositeDir(incomingDirection);
-        var allRooms = combatRooms.Concat(specialRooms).ToList();
+        var allRooms = combatRooms.Concat(specialRooms ?? Enumerable.Empty<RoomData>()).ToList();
         var deadEndCandidates = allRooms.Where(rd => {
             if (rd == null || rd.prefab == null) return false;
-            DoorPoint[] doors = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
-            return doors.Length == 1 && doors[0].direction == neededDoor;
+            var doors = GetPrefabDoors(rd);
+            return doors.Length == 1 && doors[0] == neededDoor;
         }).ToList();
 
         if (deadEndCandidates.Count > 0) return WeightedRandom(deadEndCandidates);
@@ -432,8 +438,8 @@ public class LevelGenerator : MonoBehaviour {
         foreach (RoomData rd in rooms) {
             if (rd == null || rd.prefab == null) continue;
             if (rd.minFloor > floorIndex) continue;
-            DoorPoint[] doors = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
-            if (doors.Any(d => d.direction == neededDoor)) result.Add(rd);
+            // Было: GetComponentsInChildren каждый раз
+            if (GetPrefabDoors(rd).Contains(neededDoor)) result.Add(rd);
         }
         return result;
     }
@@ -449,6 +455,7 @@ public class LevelGenerator : MonoBehaviour {
     }
 
     private void LogGenerationStats() {
+        if (_roomDepth.Count == 0) return;
         int combatCount = _allRooms.Count(r => r.data.roomType == RoomType.Combat);
         int specialCount = _allRooms.Count(r => r.data.roomType == RoomType.Special);
         int bossCount = _allRooms.Count(r => r.data.roomType == RoomType.Boss);
@@ -461,6 +468,7 @@ public class LevelGenerator : MonoBehaviour {
         _grid.Clear();
         _allRooms.Clear();
         _roomDepth.Clear();
+        _prefabDoorCache.Clear();
     }
 
     private static Vector2Int DirToGrid(DoorDirection dir) => dir switch {
@@ -479,10 +487,11 @@ public class LevelGenerator : MonoBehaviour {
         _ => DoorDirection.Up
     };
 
+    // Возвращает копию списка всех комнат (для внешнего доступа)
+    public List<RoomInstance> GetAllRooms() => new List<RoomInstance>(_allRooms);
+
     public void NextFloor() {
         floorIndex++;
-        Debug.Log($"Переход на этаж {floorIndex}");
-
         Clear();
         Generate();
         TeleportPlayerToStart();
@@ -492,5 +501,14 @@ public class LevelGenerator : MonoBehaviour {
         var startRoom = _allRooms.FirstOrDefault(r => r.data.roomType == RoomType.Start);
         if (startRoom != null && Player.Instance != null)
             Player.Instance.transform.position = startRoom.transform.position;
+    }
+
+    private DoorDirection[] GetPrefabDoors(RoomData rd) {
+        if (!_prefabDoorCache.TryGetValue(rd, out var dirs)) {
+            var points = rd.prefab.GetComponentsInChildren<DoorPoint>(true);
+            dirs = points.Select(d => d.direction).ToArray();
+            _prefabDoorCache[rd] = dirs;
+        }
+        return dirs;
     }
 }

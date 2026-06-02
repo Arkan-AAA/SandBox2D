@@ -12,10 +12,10 @@ GameObject:
   - component: {fileID: 3466304589165255887}
   - component: {fileID: 722473516603297135}
   - component: {fileID: 213234707059039587}
-  - component: {fileID: 2872772794787544323}
   - component: {fileID: 5003621752648003860}
   - component: {fileID: 1439398746186425179}
   - component: {fileID: 5282466174200226238}
+  - component: {fileID: 7119197986001508539}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -123,18 +123,7 @@ MonoBehaviour:
   _dashSpeed: 15
   _dashDuration: 0.2
   _dashCooldown: 1
---- !u!114 &2872772794787544323
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4537925237600721237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8d32bc52b11c1dee9ce6e4477572233, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GameInput
+  isDecoration: 0
 --- !u!114 &5003621752648003860
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,6 +165,25 @@ MonoBehaviour:
   weapons:
   - {fileID: 4563128978910980558}
   - {fileID: 5816299930131370143}
+--- !u!114 &7119197986001508539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4537925237600721237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de37da5ee9a5e2d5ba29eeba7437fb29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSounds
+  _attackSwordSFX: {fileID: 11400000, guid: 2d3e84a9f6b624f08bb2f597caf0ed13, type: 2}
+  _attackStaffSFX: {fileID: 11400000, guid: 5bfe02223b5844d6f96cec94a590e01d, type: 2}
+  _hitSFX: {fileID: 11400000, guid: d25672656bc8f6530ae0f0a5c7197531, type: 2}
+  _deathSFX: {fileID: 11400000, guid: 6a6f165af50743604abaf414fff6bb0a, type: 2}
+  _dashSFX: {fileID: 11400000, guid: 2027489c549f46f8f9a288eb7cd8546d, type: 2}
+  _footstepSFX: {fileID: 11400000, guid: 254a369d60c3301959f062b830bc03af, type: 2}
+  _footstepInterval: 0.35
 --- !u!1 &4559563307930886263
 GameObject:
   m_ObjectHideFlags: 0
@@ -866,6 +874,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Staff
       objectReference: {fileID: 0}
+    - target: {fileID: 3228194801576327705, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}
+      propertyPath: _muzzleFlash
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3228194801576327705, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}
+      propertyPath: _staffVisual
+      value: 
+      objectReference: {fileID: 2512311739806007635}
     - target: {fileID: 3421217469626547913, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.045
@@ -919,6 +935,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}
+--- !u!114 &2512311739806007635 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6820413419305987029, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}
+  m_PrefabInstance: {fileID: 8969903721930828422}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7b9631c199cfd60185631f1ad999e1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaffVisual
 --- !u!114 &5816299930131370143 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3228194801576327705, guid: a7bfe71c6f20f6086b2530f03fa3fff0, type: 3}

@@ -35,20 +35,7 @@ public class UIManager : MonoBehaviour {
     }
 
     private void OnGameStateChanged(GameState newState) {
-        switch (newState) {
-            case GameState.Playing:
-                Time.timeScale = 1f;
-                break;
-            case GameState.Paused:
-                Time.timeScale = 0f;
-                break;
-            case GameState.GameOver:
-                Time.timeScale = 0f;
-                break;
-            case GameState.MainMenu:
-                Time.timeScale = 0f;
-                break;
-        }
+        // Time.timeScale управляется только в GameManager
     }
 
     // ========== MAIN MENU ==========

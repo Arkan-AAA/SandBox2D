@@ -5,20 +5,31 @@ public static class SaveSystem {
     private static string SavePath => Application.persistentDataPath + "/save.json";
 
     public static void SaveGame(PlayerProgress progress) {
-        string json = JsonUtility.ToJson(progress, true);
-        File.WriteAllText(SavePath, json);
-        Debug.Log($"Game saved to {SavePath}");
+        try {
+            string json = JsonUtility.ToJson(progress, true);
+            File.WriteAllText(SavePath, json);
+        } catch (System.Exception e) {
+            Debug.LogError($"SaveGame failed: {e.Message}");
+        }
     }
 
     public static PlayerProgress LoadGame() {
-        if (File.Exists(SavePath)) {
+        if (!File.Exists(SavePath)) return new PlayerProgress();
+        try {
             string json = File.ReadAllText(SavePath);
-            return JsonUtility.FromJson<PlayerProgress>(json);
+            var progress = JsonUtility.FromJson<PlayerProgress>(json);
+            return progress ?? new PlayerProgress();
+        } catch (System.Exception e) {
+            Debug.LogError($"LoadGame failed: {e.Message}");
+            return new PlayerProgress();
         }
-        return new PlayerProgress();
     }
 
     public static void DeleteSave() {
-        if (File.Exists(SavePath)) File.Delete(SavePath);
+        try {
+            if (File.Exists(SavePath)) File.Delete(SavePath);
+        } catch (System.Exception e) {
+            Debug.LogError($"DeleteSave failed: {e.Message}");
+        }
     }
 }

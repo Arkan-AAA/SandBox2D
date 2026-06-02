@@ -29,6 +29,16 @@ public class WeaponInput : MonoBehaviour {
         Debug.Log("WeaponInput subscribed to GameInput events");
     }
 
+    private void OnDestroy() {
+        if (!_subscribed || GameInput.Instance == null) return;
+        GameInput.Instance.OnPlayerAttack -= OnAttack;
+        GameInput.Instance.OnPlayerAttackHeld -= OnAttackHeld;
+        GameInput.Instance.OnPlayerAttackReleased -= OnAttackReleased;
+        GameInput.Instance.OnNextWeapon -= OnNextWeapon;
+        GameInput.Instance.OnPreviousWeapon -= OnPreviousWeapon;
+        GameInput.Instance.OnWeaponSlot -= OnWeaponSlot;
+    }
+
     private void OnAttack(object sender, System.EventArgs e) {
         ActiveWeapon.Instance?.Attack();
     }
